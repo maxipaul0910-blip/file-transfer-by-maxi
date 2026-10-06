@@ -1,4 +1,78 @@
-// Auth Management
+const AUTH0_CONFIG = {
+  domain: 'YOUR_AUTH0_DOMAIN',
+  clientId: 'YOUR_AUTH0_CLIENT_ID',
+  redirectUri: window.location.origin + window.location.pathname
+};
+
+const auth0Client = window.auth0 ? null : null;
+
+async function initAuth0() {
+  if (!window.auth0) {
+    console.error('Auth0 script failed to load.');
+    return;
+  }
+
+  const client = await window.auth0.createAuth0Client({
+    domain: AUTH0_CONFIG.domain,
+    clientId: AUTH0_CONFIG.clientId,
+    authorizationParams: {
+      redirect_uri: AUTH0_CONFIG.redirectUri,
+      scope: 'openid profile email'
+    }
+  });
+
+  window.auth0Client = client;
+
+  try {
+    if (window.location.search.includes('code=') || window.location.hash.includes('error=')) {
+      await client.handleRedirectCallback();
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
+    const user = await client.getUser();
+    if (user) {
+      setCurrentUser({
+        name: user.name || user.nickname || 'GitHub User',
+        email: user.email || 'user@example.com',
+        avatar: user.picture || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(user.name || 'User')
+      });
+    }
+  } catch (error) {
+    console.error('Auth0 callback error:', error);
+  }
+}
+
+async function loginWithConnection(connection) {
+  if (!window.auth0Client) {
+    console.error('Auth0 client not initialized yet.');
+    return;
+  }
+
+  await window.auth0Client.loginWithRedirect({
+    authorizationParams: {
+      connection,
+      redirect_uri: AUTH0_CONFIG.redirectUri
+    }
+  });
+}
+
+async function logoutFromAuth() {
+  if (!window.auth0Client) {
+    localStorage.removeItem('currentUser');
+    updateUI();
+    return;
+  }
+
+  await window.auth0Client.logout({
+    logoutParams: {
+      returnTo: AUTH0_CONFIG.redirectUri
+    }
+  });
+
+  localStorage.removeItem('currentUser');
+  updateUI();
+}
+
 const authToggleBtn = document.getElementById('auth-toggle-btn');
 const authModal = document.getElementById('auth-modal');
 const closeAuthModalBtn = document.getElementById('close-auth-modal');
@@ -8,33 +82,16 @@ const profileToggleBtn = document.getElementById('profile-toggle-btn');
 const profileMenu = document.getElementById('profile-menu');
 const logoutBtn = document.getElementById('logout-btn');
 
-// Mock user data
-const mockUsers = {
-  google: {
-    name: 'Alex Rivera',
-    email: 'alex.rivera@gmail.com',
-    avatar: 'https://i.pravatar.cc/150?img=12'
-  },
-  github: {
-    name: 'maxipaul0910',
-    email: 'maxi.paul0910@github.com',
-    avatar: 'https://i.pravatar.cc/150?img=33'
-  }
-};
-
-// Get current user from localStorage
 function getCurrentUser() {
   const userJSON = localStorage.getItem('currentUser');
   return userJSON ? JSON.parse(userJSON) : null;
 }
 
-// Set current user
 function setCurrentUser(user) {
   localStorage.setItem('currentUser', JSON.stringify(user));
   updateUI();
 }
 
-// Update UI based on auth state
 function updateUI() {
   const user = getCurrentUser();
 
@@ -52,7 +109,6 @@ function updateUI() {
   }
 }
 
-// Open/close auth modal
 authToggleBtn.addEventListener('click', () => {
   authModal.classList.remove('hidden');
 });
@@ -67,35 +123,29 @@ authModal.addEventListener('click', (e) => {
   }
 });
 
-// Google login
-googleLoginBtn.addEventListener('click', () => {
-  setCurrentUser(mockUsers.google);
+googleLoginBtn.addEventListener('click', async () => {
   authModal.classList.add('hidden');
+  await loginWithConnection('google-oauth2');
 });
 
-// GitHub login
-githubLoginBtn.addEventListener('click', () => {
-  setCurrentUser(mockUsers.github);
+githubLoginBtn.addEventListener('click', async () => {
   authModal.classList.add('hidden');
+  await loginWithConnection('github');
 });
 
-// Toggle profile menu
 profileToggleBtn.addEventListener('click', (e) => {
   e.stopPropagation();
   profileMenu.classList.toggle('hidden');
 });
 
-// Close profile menu when clicking outside
 document.addEventListener('click', () => {
   profileMenu.classList.add('hidden');
 });
 
-// Logout
-logoutBtn.addEventListener('click', () => {
-  localStorage.removeItem('currentUser');
-  updateUI();
+logoutBtn.addEventListener('click', async () => {
+  await logoutFromAuth();
   profileMenu.classList.add('hidden');
 });
 
-// Initialize UI on page load
+initAuth0();
 updateUI();
