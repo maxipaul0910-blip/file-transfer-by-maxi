@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TransferFlow</title>
+    <meta name="description" content="Modern file transfer and sharing app" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="bg-orb orb-1"></div>
+    <div class="bg-orb orb-2"></div>
+
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark">T</div>
+        <span>TransferFlow</span>
+      </div>
+      <nav>
+        <a href="#features">Features</a>
+        <a href="#upload">Upload</a>
+        <a href="#files">Files</a>
+      </nav>
+    </header>
+
+    <main class="container">
+      <section class="hero">
+        <div class="hero-copy">
+          <span class="eyebrow">Fast file sharing</span>
+          <h1>Send files in seconds. Share your links with zero friction.</h1>
+          <p>
+            A cleaner, more premium file-transfer experience inspired by WorkUpload. Browse repo files,
+            upload your own files, and create a shareable link for quick download access.
+          </p>
+
+          <div class="cta-row">
+            <a class="primary-btn" href="#upload">Upload a file</a>
+            <a class="secondary-btn" href="#files">Browse files</a>
+          </div>
+
+          <div class="stats">
+            <div>
+              <strong>Repo</strong>
+              <span>ready files</span>
+            </div>
+            <div>
+              <strong>Local</strong>
+              <span>sharing links</span>
+            </div>
+            <div>
+              <strong>Fast</strong>
+              <span>download flow</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="hero-panel">
+          <div class="panel-card">
+            <div class="card-head">
+              <span class="dot green"></span>
+              <span class="dot yellow"></span>
+              <span class="dot red"></span>
+            </div>
+
+            <div class="file-row">
+              <div class="icon">PDF</div>
+              <div class="text">
+                <h3>project-brief.pdf</h3>
+                <p>2.4 MB • shared</p>
+              </div>
+            </div>
+
+            <div class="mini-progress">
+              <span></span>
+            </div>
+
+            <div class="share-box">
+              <span>Share link</span>
+              <strong>transferflow.github.io/share.html?file=demo-123</strong>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="features" class="features">
+        <div class="section-title">
+          <span>Built for sharing</span>
+          <h2>Everything you need to move files quickly</h2>
+        </div>
+
+        <div class="feature-grid">
+          <article>
+            <div class="feature-icon">⚡</div>
+            <h3>Instant upload</h3>
+            <p>Quick drag-and-drop uploads with a polished interface and single-click sharing.</p>
+          </article>
+
+          <article>
+            <div class="feature-icon">📁</div>
+            <h3>Repo files</h3>
+            <p>Display project files stored in this repository and keep them easy to download.</p>
+          </article>
+
+          <article>
+            <div class="feature-icon">🔗</div>
+            <h3>Shareable links</h3>
+            <p>Create a per-file link so others can access a downloadable version instantly.</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="upload" class="upload-panel">
+        <div class="section-title">
+          <span>Upload</span>
+          <h2>Send a file to anyone</h2>
+        </div>
+
+        <form id="upload-form" class="upload-form">
+          <label class="dropzone" for="file-input">
+            <input id="file-input" type="file" name="file" />
+            <div class="dropzone-inner">
+              <div class="upload-icon">⇪</div>
+              <h3>Drag and drop files here</h3>
+              <p>or click to browse</p>
+            </div>
+          </label>
+
+          <button type="submit" class="primary-btn wide">Upload and create link</button>
+        </form>
+
+        <div id="upload-message" class="upload-message"></div>
+      </section>
+
+      <section id="files" class="files-section">
+        <div class="section-title">
+          <span>Files</span>
+          <h2>Repo files and your uploads</h2>
+        </div>
+
+        <div class="tab-row">
+          <button class="tab active" data-tab="repo">Repo files</button>
+          <button class="tab" data-tab="uploaded">My uploads</button>
+        </div>
+
+        <div id="repo-list" class="file-list active"></div>
+        <div id="uploaded-list" class="file-list"></div>
+      </section>
+    </main>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
