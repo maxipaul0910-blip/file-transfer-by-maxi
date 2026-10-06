@@ -1,14 +1,14 @@
 :root {
-  --bg: #07111f;
-  --panel: rgba(15, 23, 42, 0.75);
-  --panel-strong: rgba(15, 23, 42, 0.95);
-  --card: rgba(17, 24, 39, 0.8);
-  --border: rgba(148, 163, 184, 0.2);
-  --text: #e5eefb;
-  --muted: #9fb1c9;
-  --primary: #7c3aed;
-  --primary-2: #22d3ee;
-  --shadow: 0 30px 80px rgba(15, 23, 42, 0.55);
+  --bg: #0a1612;
+  --panel: rgba(12, 22, 18, 0.75);
+  --panel-strong: rgba(12, 22, 18, 0.95);
+  --card: rgba(15, 26, 21, 0.8);
+  --border: rgba(110, 180, 140, 0.2);
+  --text: #e5f8f2;
+  --muted: #92b5a3;
+  --primary: #10b981;
+  --primary-2: #34d399;
+  --shadow: 0 30px 80px rgba(12, 22, 18, 0.55);
 }
 
 * {
@@ -23,9 +23,9 @@ body {
   margin: 0;
   font-family: "Inter", sans-serif;
   background:
-    radial-gradient(circle at top left, rgba(124, 58, 237, 0.16), transparent 30%),
-    radial-gradient(circle at bottom right, rgba(34, 211, 238, 0.12), transparent 30%),
-    #07111f;
+    radial-gradient(circle at top left, rgba(16, 185, 129, 0.16), transparent 30%),
+    radial-gradient(circle at bottom right, rgba(52, 211, 153, 0.12), transparent 30%),
+    #0a1612;
   color: var(--text);
 }
 
@@ -45,7 +45,7 @@ a {
 .orb-1 {
   width: 280px;
   height: 280px;
-  background: rgba(124, 58, 237, 0.35);
+  background: rgba(16, 185, 129, 0.35);
   top: 60px;
   left: 10%;
 }
@@ -53,7 +53,7 @@ a {
 .orb-2 {
   width: 360px;
   height: 360px;
-  background: rgba(34, 211, 238, 0.18);
+  background: rgba(52, 211, 153, 0.18);
   bottom: 30px;
   right: 8%;
 }
@@ -108,9 +108,9 @@ nav {
 
 .eyebrow {
   display: inline-block;
-  background: rgba(124, 58, 237, 0.12);
-  color: #d3c2ff;
-  border: 1px solid rgba(124, 58, 237, 0.3);
+  background: rgba(16, 185, 129, 0.12);
+  color: #a3e6d4;
+  border: 1px solid rgba(16, 185, 129, 0.3);
   border-radius: 999px;
   padding: 8px 12px;
   font-size: 0.75rem;
@@ -156,11 +156,11 @@ nav {
 .primary-btn {
   background: linear-gradient(135deg, var(--primary), var(--primary-2));
   color: white;
-  box-shadow: 0 22px 48px rgba(124, 58, 237, 0.45);
+  box-shadow: 0 22px 48px rgba(16, 185, 129, 0.45);
 }
 
 .secondary-btn {
-  background: rgba(148, 163, 184, 0.08);
+  background: rgba(110, 180, 140, 0.08);
   border: 1px solid var(--border);
   color: var(--text);
 }
@@ -198,7 +198,7 @@ nav {
 
 .panel-card {
   width: min(100%, 500px);
-  background: linear-gradient(180deg, rgba(15, 23, 42, 0.94), rgba(15, 23, 42, 0.82));
+  background: linear-gradient(180deg, rgba(12, 22, 18, 0.94), rgba(12, 22, 18, 0.82));
   border: 1px solid var(--border);
   border-radius: 28px;
   padding: 18px;
@@ -226,7 +226,7 @@ nav {
   display: flex;
   align-items: center;
   gap: 16px;
-  background: rgba(148, 163, 184, 0.06);
+  background: rgba(110, 180, 140, 0.06);
   border: 1px solid var(--border);
   border-radius: 18px;
   padding: 16px;
@@ -236,7 +236,7 @@ nav {
   width: 52px;
   height: 52px;
   border-radius: 16px;
-  background: linear-gradient(135deg, rgba(124, 58, 237, 0.8), rgba(34, 211, 238, 0.7));
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.8), rgba(52, 211, 153, 0.7));
   display: grid;
   place-items: center;
   font-weight: 700;
@@ -257,7 +257,7 @@ nav {
   margin: 16px 0;
   width: 100%;
   height: 10px;
-  background: rgba(148, 163, 184, 0.08);
+  background: rgba(110, 180, 140, 0.08);
   border-radius: 999px;
   overflow: hidden;
 }
@@ -274,8 +274,8 @@ nav {
   margin-top: 18px;
   padding: 16px;
   border-radius: 16px;
-  border: 1px solid rgba(34, 211, 238, 0.2);
-  background: rgba(34, 211, 238, 0.06);
+  border: 1px solid rgba(52, 211, 153, 0.2);
+  background: rgba(52, 211, 153, 0.06);
 }
 
 .share-box span {
@@ -300,7 +300,7 @@ nav {
 }
 
 .section-title span {
-  color: #c4d7ff;
+  color: #c8f0e4;
   text-transform: uppercase;
   letter-spacing: 0.12em;
   font-size: 0.76rem;
@@ -320,7 +320,7 @@ nav {
 }
 
 .feature-grid article {
-  background: rgba(15, 23, 42, 0.68);
+  background: rgba(12, 22, 18, 0.68);
   border: 1px solid var(--border);
   border-radius: 24px;
   padding: 28px 22px;
@@ -334,7 +334,7 @@ nav {
   place-items: center;
   border-radius: 16px;
   font-size: 1.5rem;
-  background: rgba(124, 58, 237, 0.14);
+  background: rgba(16, 185, 129, 0.14);
   margin-bottom: 18px;
 }
 
@@ -361,8 +361,8 @@ nav {
 
 .dropzone {
   display: block;
-  border: 1px dashed rgba(148, 163, 184, 0.5);
-  background: rgba(15, 23, 42, 0.62);
+  border: 1px dashed rgba(110, 180, 140, 0.5);
+  background: rgba(12, 22, 18, 0.62);
   border-radius: 24px;
   padding: 26px;
   cursor: pointer;
@@ -378,7 +378,7 @@ nav {
   text-align: center;
   min-height: 220px;
   border-radius: 18px;
-  background: linear-gradient(180deg, rgba(124, 58, 237, 0.06), rgba(34, 211, 238, 0.04));
+  background: linear-gradient(180deg, rgba(16, 185, 129, 0.06), rgba(52, 211, 153, 0.04));
 }
 
 .upload-icon {
@@ -420,7 +420,7 @@ nav {
 .tab-row {
   display: inline-flex;
   gap: 8px;
-  background: rgba(15, 23, 42, 0.72);
+  background: rgba(12, 22, 18, 0.72);
   border: 1px solid var(--border);
   border-radius: 14px;
   padding: 8px;
@@ -438,13 +438,13 @@ nav {
 }
 
 .tab.active {
-  background: rgba(124, 58, 237, 0.2);
+  background: rgba(16, 185, 129, 0.2);
   color: var(--text);
-  border: 1px solid rgba(124, 58, 237, 0.3);
+  border: 1px solid rgba(16, 185, 129, 0.3);
 }
 
 .file-card {
-  background: rgba(15, 23, 42, 0.76);
+  background: rgba(12, 22, 18, 0.76);
   border: 1px solid var(--border);
   border-radius: 20px;
   padding: 16px;
@@ -492,9 +492,9 @@ nav {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: rgba(124, 58, 237, 0.12);
-  border: 1px solid rgba(124, 58, 237, 0.32);
-  color: #dfd4ff;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.32);
+  color: #c8f0e4;
   border-radius: 10px;
   padding: 10px 12px;
   font-size: 0.85rem;
@@ -502,8 +502,8 @@ nav {
 }
 
 .file-link.secondary {
-  background: rgba(34, 211, 238, 0.08);
-  border-color: rgba(34, 211, 238, 0.25);
+  background: rgba(52, 211, 153, 0.08);
+  border-color: rgba(52, 211, 153, 0.25);
   color: #cff7ff;
 }
 
