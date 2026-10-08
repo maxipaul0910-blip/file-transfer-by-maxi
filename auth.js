@@ -7,6 +7,8 @@ const profileToggleBtn = document.getElementById("profile-toggle-btn");
 const profileMenu = document.getElementById("profile-menu");
 const logoutBtn = document.getElementById("logout-btn");
 const authError = document.getElementById("auth-error");
+const accountModal = document.getElementById("account-modal");
+const accountFeedback = document.getElementById("account-feedback");
 
 const AUTH0_CONFIG = {
   domain: "dev-1f0dklchqlhbqxcy.us.auth0.com",
@@ -26,6 +28,52 @@ function clearAuthError() {
   authError.classList.add("hidden");
 }
 
+function getUploadsSummary() {
+  try {
+    const uploads = JSON.parse(localStorage.getItem("transferflow_uploads") || "[]");
+    if (!Array.isArray(uploads)) {
+      throw new TypeError("Saved uploads must be an array.");
+    }
+    return {
+      count: uploads.length,
+      size: uploads.reduce((total, upload) => {
+        const size = Number(upload?.size);
+        return total + (Number.isFinite(size) && size > 0 ? size : 0);
+      }, 0),
+    };
+  } catch (error) {
+    console.error("Could not read saved uploads:", error);
+    return null;
+  }
+}
+
+function formatFileSize(size) {
+  if (size === 0) return "0 B";
+  const units = ["B", "KB", "MB", "GB", "TB"];
+  const unitIndex = Math.min(Math.floor(Math.log(size) / Math.log(1024)), units.length - 1);
+  const value = size / 1024 ** unitIndex;
+  return `${value.toFixed(value >= 10 || unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`;
+}
+
+function describeUploads(summary) {
+  if (!summary) return "Upload details unavailable";
+  const fileLabel = summary.count === 1 ? "file" : "files";
+  return `${summary.count} ${fileLabel} · ${formatFileSize(summary.size)}`;
+}
+
+function updateUploadSummary() {
+  const summary = describeUploads(getUploadsSummary());
+  document.getElementById("profile-upload-count").textContent = summary;
+  document.getElementById("account-upload-summary").textContent = summary;
+}
+
+function getProviderName(user) {
+  const provider = user.sub?.split("|", 1)[0];
+  if (provider === "google-oauth2") return "Google";
+  if (provider === "github") return "GitHub";
+  return provider ? "Auth0" : "Signed in";
+}
+
 function updateUI() {
   if (currentUser) {
     authToggleBtn.classList.add("hidden");
@@ -35,10 +83,25 @@ function updateUI() {
       currentUser.name || currentUser.nickname || "User";
     document.getElementById("profile-email").textContent = currentUser.email || "";
     document.getElementById("profile-avatar").src = currentUser.picture || "";
+    document.getElementById("account-name").textContent =
+      currentUser.name || currentUser.nickname || "User";
+    document.getElementById("account-email").textContent = currentUser.email || "No email provided";
+    document.getElementById("account-email-status").textContent = currentUser.email
+      ? currentUser.email_verified
+        ? "Verified"
+        : "Not verified"
+      : "Not provided";
+    document.getElementById("account-provider").textContent =
+      `Signed in with ${getProviderName(currentUser)}`;
+    document.getElementById("account-avatar").src = currentUser.picture || "";
+    document.getElementById("account-avatar").alt =
+      currentUser.name ? `${currentUser.name}'s profile` : "Profile";
+    updateUploadSummary();
   } else {
     authToggleBtn.classList.remove("hidden");
     profileToggleBtn.classList.add("hidden");
     profileMenu.classList.add("hidden");
+    accountModal.classList.add("hidden");
   }
 }
 
@@ -183,6 +246,56 @@ document.addEventListener("click", () => {
 });
 
 logoutBtn.addEventListener("click", logoutFromAuth);
+
+function openAccountDetails() {
+  if (!currentUser) return;
+  updateUploadSummary();
+  accountFeedback.textContent = "";
+  profileMenu.classList.add("hidden");
+  accountModal.classList.remove("hidden");
+  document.getElementById("close-account-modal").focus();
+}
+
+function openMyUploads() {
+  profileMenu.classList.add("hidden");
+  accountModal.classList.add("hidden");
+  document.querySelector('.tab[data-tab="uploaded"]').click();
+  document.getElementById("files").scrollIntoView({ behavior: "smooth" });
+}
+
+document.getElementById("profile-details-btn").addEventListener("click", openAccountDetails);
+document.getElementById("close-account-modal").addEventListener("click", () => {
+  accountModal.classList.add("hidden");
+  profileToggleBtn.focus();
+});
+accountModal.addEventListener("click", (event) => {
+  if (event.target === accountModal) {
+    accountModal.classList.add("hidden");
+    profileToggleBtn.focus();
+  }
+});
+document.getElementById("profile-uploads-btn").addEventListener("click", openMyUploads);
+document.getElementById("account-uploads-btn").addEventListener("click", openMyUploads);
+document.getElementById("copy-account-email-btn").addEventListener("click", async () => {
+  if (!currentUser?.email) {
+    accountFeedback.textContent = "There is no email address on this account to copy.";
+    return;
+  }
+  try {
+    await navigator.clipboard.writeText(currentUser.email);
+    accountFeedback.textContent = "Email copied to clipboard.";
+  } catch (error) {
+    console.error("Could not copy account email:", error);
+    accountFeedback.textContent = "Could not copy email. Check clipboard permission and try again.";
+  }
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && !accountModal.classList.contains("hidden")) {
+    accountModal.classList.add("hidden");
+    profileToggleBtn.focus();
+  }
+});
 
 updateUI();
 initAuth0();

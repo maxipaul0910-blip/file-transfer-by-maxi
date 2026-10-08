@@ -53,8 +53,51 @@
         </div>
       </div>
       <div class="profile-divider"></div>
-      <a href="#profile" class="profile-link" id="profile-link">Profile Settings</a>
+      <div class="profile-summary">
+        <span>Your uploads</span>
+        <strong id="profile-upload-count">0 files · 0 B</strong>
+      </div>
+      <button type="button" class="profile-link" id="profile-details-btn">Account details</button>
+      <button type="button" class="profile-link" id="profile-uploads-btn">View my uploads</button>
       <button id="logout-btn" class="profile-link danger">Sign out</button>
+    </div>
+
+    <div id="account-modal" class="modal hidden">
+      <section class="modal-content account-card" role="dialog" aria-modal="true" aria-labelledby="account-title">
+        <div class="modal-header">
+          <div>
+            <span class="eyebrow">Your account</span>
+            <h2 id="account-title">Account details</h2>
+          </div>
+          <button type="button" class="modal-close" id="close-account-modal" aria-label="Close account details">&times;</button>
+        </div>
+        <div class="account-identity">
+          <img id="account-avatar" class="account-avatar" src="" alt="" />
+          <div>
+            <strong id="account-name"></strong>
+            <span id="account-provider" class="account-provider"></span>
+          </div>
+        </div>
+        <dl class="account-details">
+          <div>
+            <dt>Email</dt>
+            <dd id="account-email"></dd>
+          </div>
+          <div>
+            <dt>Email status</dt>
+            <dd id="account-email-status"></dd>
+          </div>
+          <div>
+            <dt>Your uploads</dt>
+            <dd id="account-upload-summary"></dd>
+          </div>
+        </dl>
+        <div class="account-actions">
+          <button type="button" class="secondary-btn" id="copy-account-email-btn">Copy email</button>
+          <button type="button" class="primary-btn" id="account-uploads-btn">Manage uploads</button>
+        </div>
+        <p id="account-feedback" class="account-feedback" role="status" aria-live="polite"></p>
+      </section>
     </div>
 
     <header class="topbar">
