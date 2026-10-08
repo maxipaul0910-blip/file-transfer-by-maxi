@@ -4,9 +4,10 @@
 
 This project is a static HTML/CSS/JavaScript site. It uses the official Auth0
 SPA SDK in the browser; no server framework, Node.js app, or npm install is
-needed to run the site. The Auth0 domain and public SPA client ID are set in
-`auth-config.js`. Provider client secrets must only be entered into Auth0 and
-must never be added to this repository.
+needed to run the site. The Auth0 domain and public SPA client ID are hardcoded
+in `auth.js`. The client ID is intended to be public in a browser app; provider
+client secrets must only be entered into Auth0 and must never be added to this
+repository.
 
 ### Auth0 dashboard
 

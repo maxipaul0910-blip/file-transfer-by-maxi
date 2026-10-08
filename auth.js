@@ -8,7 +8,10 @@ const profileMenu = document.getElementById("profile-menu");
 const logoutBtn = document.getElementById("logout-btn");
 const authError = document.getElementById("auth-error");
 
-const authConfig = window.FLO_AUTH_CONFIG;
+const AUTH0_CONFIG = {
+  domain: "dev-1f0dklchqlhbqxcy.us.auth0.com",
+  clientId: "aoPKSPkKMnUqVXAcbkQE6l3YcKGJuePi",
+};
 const redirectUri = window.location.origin + window.location.pathname;
 let auth0Client = null;
 let currentUser = null;
@@ -41,14 +44,10 @@ function updateUI() {
 
 function getConfigurationError() {
   if (
-    typeof authConfig?.domain !== "string" ||
-    typeof authConfig?.clientId !== "string" ||
-    !authConfig.domain.trim() ||
-    !authConfig.clientId.trim() ||
-    authConfig.domain.includes("YOUR_") ||
-    authConfig.clientId.includes("YOUR_")
+    !AUTH0_CONFIG.domain.trim() ||
+    !AUTH0_CONFIG.clientId.trim()
   ) {
-    return "Sign-in is not configured yet. Add your Auth0 domain and client ID in auth-config.js.";
+    return "Sign-in is not configured. Check the Auth0 settings in auth.js.";
   }
   return null;
 }
@@ -70,8 +69,8 @@ async function initAuth0() {
 
   try {
     auth0Client = await window.auth0.createAuth0Client({
-      domain: authConfig.domain.trim(),
-      clientId: authConfig.clientId.trim(),
+      domain: AUTH0_CONFIG.domain,
+      clientId: AUTH0_CONFIG.clientId,
       authorizationParams: {
         redirect_uri: redirectUri,
         scope: "openid profile email",
