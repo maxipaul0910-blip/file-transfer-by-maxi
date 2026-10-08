@@ -213,6 +213,22 @@ nav a:hover {
   font-size: 0.9rem;
 }
 
+.auth-error {
+  margin: 16px 0 0;
+  padding: 12px;
+  border: 1px solid rgba(248, 113, 113, 0.35);
+  border-radius: 10px;
+  background: rgba(127, 29, 29, 0.2);
+  color: #fecaca;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.auth-btn:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
 .profile-menu {
   position: absolute;
   top: 72px;
