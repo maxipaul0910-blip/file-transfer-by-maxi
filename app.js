@@ -23,7 +23,9 @@ function createCard(item, type) {
   card.className = "file-card";
 
   const badge = type === "repo" ? "Repo" : "Upload";
-  const href = item.url || item.downloadUrl || item.path || "#";
+  const href = type === "upload"
+    ? item.shareUrl || `./share.html?file=${encodeURIComponent(item.id)}`
+    : item.url || item.downloadUrl || item.path || "#";
   const shareHref = item.shareUrl || "";
 
   card.innerHTML = `
@@ -84,14 +86,13 @@ function saveUploads() {
 }
 
 function makeShareLink(file) {
-  const fileId = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-  file.id = fileId;
-  file.shareUrl = `./share.html?file=${encodeURIComponent(fileId)}`;
-  file.downloadUrl = file.url || `./share.html?file=${encodeURIComponent(fileId)}`;
+  const fileId = file.id;
+  file.shareUrl = new URL(`./share.html?file=${encodeURIComponent(fileId)}`, window.location.href).href;
+  file.downloadUrl = file.shareUrl;
   return file;
 }
 
-uploadForm.addEventListener("submit", (event) => {
+uploadForm.addEventListener("submit", async (event) => {
   event.preventDefault();
 
   const file = fileInput.files[0];
@@ -100,23 +101,34 @@ uploadForm.addEventListener("submit", (event) => {
     return;
   }
 
-  const fileRecord = {
-    id: crypto.randomUUID ? crypto.randomUUID() : `file-${Date.now()}`,
+  const fileRecord = makeShareLink({
+    id: crypto.randomUUID ? crypto.randomUUID() : `file-${Date.now()}-${Math.random().toString(16).slice(2)}`,
     originalName: file.name,
     name: file.name,
     type: file.type || "application/octet-stream",
     size: file.size,
-    url: URL.createObjectURL(file),
     path: "#",
-  };
+  });
 
-  const shareItem = makeShareLink(fileRecord);
-  state.uploads.unshift(shareItem);
-  saveUploads();
-  renderUploads(state.uploads);
+  const submitButton = uploadForm.querySelector('button[type="submit"]');
+  submitButton.disabled = true;
+  uploadMessage.textContent = "Saving your file in this browser…";
+  try {
+    await window.uploadFileStorage.save(fileRecord.id, file);
+    state.uploads.unshift(fileRecord);
+    saveUploads();
+    renderUploads(state.uploads);
 
-  uploadMessage.textContent = `Uploaded successfully — share link: ${shareItem.shareUrl}`;
-  fileInput.value = "";
+    uploadMessage.textContent =
+      `Saved in this browser. This link works in the same browser profile only: ${fileRecord.shareUrl}`;
+    fileInput.value = "";
+  } catch (error) {
+    console.error("Could not save uploaded file:", error);
+    uploadMessage.textContent =
+      "The file could not be saved in this browser. Check available storage and try again.";
+  } finally {
+    submitButton.disabled = false;
+  }
 });
 
 function loadUploads() {

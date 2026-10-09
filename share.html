@@ -51,21 +51,37 @@
       <a id="download-link" class="download-btn" href="#">Download file</a>
     </div>
 
+    <script src="./upload-storage.js"></script>
     <script>
       const params = new URLSearchParams(window.location.search);
       const fileId = params.get("file");
-      const uploads = JSON.parse(localStorage.getItem("transferflow_uploads") || "[]");
-      const file = uploads.find((item) => item.id === fileId);
       const meta = document.getElementById("share-meta");
       const link = document.getElementById("download-link");
 
-      if (file) {
-        meta.innerHTML = `<strong>${file.name}</strong><br>${formatSize(file.size)} • ${file.type}`;
-        link.href = file.url;
-        link.download = file.name;
-      } else {
-        meta.textContent = "This link has expired or the file is not available in this browser.";
-        link.style.display = "none";
+      async function loadSharedFile() {
+        if (!fileId) {
+          meta.textContent = "This link does not include a file ID.";
+          link.style.display = "none";
+          return;
+        }
+
+        try {
+          const file = await window.uploadFileStorage.get(fileId);
+          if (!file) {
+            meta.textContent =
+              "This file is not saved in this browser profile. Local upload links only work in the browser that created them.";
+            link.style.display = "none";
+            return;
+          }
+
+          meta.textContent = `${file.name} · ${formatSize(file.size)} · ${file.type}`;
+          link.href = URL.createObjectURL(file.file);
+          link.download = file.name;
+        } catch (error) {
+          console.error("Could not load shared file:", error);
+          meta.textContent = "Could not access this browser's saved files. Check browser storage permissions and try again.";
+          link.style.display = "none";
+        }
       }
 
       function formatSize(size) {
@@ -75,6 +91,8 @@
         const value = size / 1024 ** index;
         return `${value.toFixed(value >= 10 || index === 0 ? 0 : 1)} ${units[index]}`;
       }
+
+      loadSharedFile();
     </script>
   </body>
 </html>

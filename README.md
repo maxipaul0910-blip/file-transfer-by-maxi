@@ -39,3 +39,11 @@ and `github`.
 Do not open `index.html` directly with a `file://` URL. Auth0 redirects back to
 the URL of the page that started sign-in, so local testing needs the localhost
 URLs above registered.
+
+## Local file uploads
+
+Uploaded file contents are saved in this browser's IndexedDB, so opening the
+generated link later in the same browser profile continues to work. The link
+does not upload the file to a server: other people, devices, or browser profiles
+cannot access it. Public file sharing requires a storage service and a backend
+or upload API.
