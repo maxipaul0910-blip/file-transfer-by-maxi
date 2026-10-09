@@ -104,6 +104,15 @@ function saveUploads() {
   localStorage.setItem("transferflow_uploads", JSON.stringify(state.uploads));
 }
 
+function makeBrandedShareUrl(file, downloadUrl) {
+  const shareUrl = new URL("./share.html", window.location.href);
+  shareUrl.searchParams.set("url", downloadUrl);
+  shareUrl.searchParams.set("name", file.name);
+  shareUrl.searchParams.set("size", String(file.size));
+  shareUrl.searchParams.set("type", file.type || "application/octet-stream");
+  return shareUrl.href;
+}
+
 function showUploadResult(file, metadataSaved) {
   uploadMessage.replaceChildren();
   const message = document.createElement("span");
@@ -154,7 +163,7 @@ uploadForm.addEventListener("submit", async (event) => {
       throw new Error(`Filebin upload failed (HTTP ${response.status})${reason ? `: ${reason}` : "."}`);
     }
 
-    const shareUrl = new URL(`/${binId}/${encodedFileName}`, FILEBIN_ORIGIN);
+    const downloadUrl = new URL(`/${binId}/${encodedFileName}`, FILEBIN_ORIGIN).href;
 
     const fileRecord = {
       id: binId,
@@ -162,8 +171,8 @@ uploadForm.addEventListener("submit", async (event) => {
       name: file.name,
       type: file.type || "application/octet-stream",
       size: file.size,
-      shareUrl: shareUrl.href,
-      url: shareUrl.href,
+      shareUrl: makeBrandedShareUrl(file, downloadUrl),
+      url: downloadUrl,
       expires: result.bin.expired_at || null,
     };
 

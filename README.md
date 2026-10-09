@@ -50,6 +50,11 @@ public link; do not upload private or sensitive data. Links stop working when
 Filebin expires or removes the file, and its storage capacity can temporarily
 prevent uploads.
 
+New share links open a FloFileTransfer-styled download page with file details
+and a download button. Filebin sends `X-Frame-Options: deny`, so browsers block
+its website from being displayed inside an iframe; the button opens the
+Filebin-hosted download directly instead.
+
 Links created before this external upload integration are browser-local. Their
 file contents were never sent to a storage service, so upload the file again to
 create a shareable link.

@@ -3,96 +3,191 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>TransferFlow | Download</title>
+    <meta name="description" content="A file shared with FloFileTransfer" />
+    <title>Shared file | FloFileTransfer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="./styles.css" />
     <style>
-      body {
+      .shared-page {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .shared-topbar {
+        width: min(100% - 40px, 1120px);
+        margin: 0 auto;
+        padding: 24px 0;
+      }
+
+      .shared-main {
+        width: min(100% - 40px, 720px);
+        margin: auto;
+        padding: 32px 0 80px;
+      }
+
+      .shared-card {
+        padding: clamp(24px, 6vw, 48px);
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 28px;
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(16px);
+      }
+
+      .shared-icon {
+        width: 58px;
+        height: 58px;
         display: grid;
         place-items: center;
-        min-height: 100vh;
+        margin-bottom: 24px;
+        border: 1px solid rgba(66, 208, 162, 0.28);
+        border-radius: 18px;
+        background: rgba(66, 208, 162, 0.1);
+        color: var(--green-2);
+        font-size: 1.7rem;
       }
 
-      .share-box {
-        max-width: 700px;
-        margin: 0 auto;
-        background: rgba(15, 23, 42, 0.78);
-        border: 1px solid rgba(148, 163, 184, 0.2);
-        border-radius: 28px;
-        padding: 28px;
-        box-shadow: 0 30px 80px rgba(15, 23, 42, 0.5);
+      .shared-eyebrow {
+        color: var(--green-2);
+        font-size: 0.82rem;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
       }
 
-      .share-box h1 {
-        margin: 0 0 16px;
-        font-size: clamp(2rem, 4vw, 3rem);
+      .shared-card h1 {
+        margin: 10px 0 12px;
+        font-size: clamp(1.8rem, 5vw, 2.8rem);
+        letter-spacing: -0.055em;
+        overflow-wrap: anywhere;
       }
 
-      .meta {
-        color: #a9bbd6;
-        margin-bottom: 22px;
-        line-height: 1.7;
+      .shared-description {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.65;
       }
 
-      .download-btn {
-        display: inline-block;
-        background: linear-gradient(135deg, #7c3aed, #22d3ee);
-        color: white;
-        border-radius: 14px;
-        padding: 16px 22px;
-        font-weight: 800;
-        text-decoration: none;
+      .shared-file-info {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 18px;
+        margin: 26px 0;
+        padding: 18px 0;
+        border-top: 1px solid var(--border);
+        border-bottom: 1px solid var(--border);
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+
+      .shared-download {
+        width: 100%;
+        justify-content: center;
+      }
+
+      .shared-host-note {
+        margin: 16px 0 0;
+        color: var(--muted);
+        font-size: 0.82rem;
+        line-height: 1.6;
+      }
+
+      .shared-error {
+        padding: 14px;
+        border: 1px solid rgba(248, 113, 113, 0.35);
+        border-radius: 12px;
+        background: rgba(127, 29, 29, 0.2);
+        color: #fecaca;
+      }
+
+      .shared-footer {
+        padding: 20px;
+        color: var(--muted);
+        text-align: center;
+        font-size: 0.82rem;
       }
     </style>
   </head>
-  <body>
-    <div class="share-box">
-      <h1>Download file</h1>
-      <div id="share-meta" class="meta">Loading…</div>
-      <a id="download-link" class="download-btn" href="#">Download file</a>
-    </div>
+  <body class="shared-page">
+    <header class="shared-topbar">
+      <a class="brand" href="./">
+        <span class="brand-mark">F</span>
+        <span>FloFileTransfer</span>
+      </a>
+    </header>
 
-    <script src="./upload-storage.js"></script>
+    <main class="shared-main">
+      <section id="shared-card" class="shared-card" aria-labelledby="shared-title">
+        <div class="shared-icon" aria-hidden="true">↓</div>
+        <span class="shared-eyebrow">File shared with you</span>
+        <h1 id="shared-title">Loading shared file…</h1>
+        <p id="shared-description" class="shared-description">
+          Preparing your download.
+        </p>
+        <div id="shared-file-info" class="shared-file-info"></div>
+        <a id="shared-download" class="primary-btn shared-download hidden" href="">
+          Download file
+        </a>
+        <p id="shared-host-note" class="shared-host-note hidden">
+          Your download is securely hosted by Filebin. FloFileTransfer does not
+          store a copy of this file.
+        </p>
+      </section>
+    </main>
+
+    <footer class="shared-footer">Shared with FloFileTransfer</footer>
+
     <script>
       const params = new URLSearchParams(window.location.search);
-      const fileId = params.get("file");
-      const meta = document.getElementById("share-meta");
-      const link = document.getElementById("download-link");
-
-      async function loadSharedFile() {
-        if (!fileId) {
-          meta.textContent = "This link does not include a file ID.";
-          link.style.display = "none";
-          return;
-        }
-
-        try {
-          const file = await window.uploadFileStorage.get(fileId);
-          if (!file) {
-            meta.textContent =
-              "This file is not saved in this browser profile. Local upload links only work in the browser that created them.";
-            link.style.display = "none";
-            return;
-          }
-
-          meta.textContent = `${file.name} · ${formatSize(file.size)} · ${file.type}`;
-          link.href = URL.createObjectURL(file.file);
-          link.download = file.name;
-        } catch (error) {
-          console.error("Could not load shared file:", error);
-          meta.textContent = "Could not access this browser's saved files. Check browser storage permissions and try again.";
-          link.style.display = "none";
-        }
-      }
+      const title = document.getElementById("shared-title");
+      const description = document.getElementById("shared-description");
+      const info = document.getElementById("shared-file-info");
+      const download = document.getElementById("shared-download");
+      const hostNote = document.getElementById("shared-host-note");
 
       function formatSize(size) {
-        if (!size) return "0 B";
+        if (!Number.isFinite(size) || size <= 0) return "Size unavailable";
         const units = ["B", "KB", "MB", "GB", "TB"];
         const index = Math.min(Math.floor(Math.log(size) / Math.log(1024)), units.length - 1);
         const value = size / 1024 ** index;
         return `${value.toFixed(value >= 10 || index === 0 ? 0 : 1)} ${units[index]}`;
       }
 
-      loadSharedFile();
+      function showError(message) {
+        title.textContent = "This share link is invalid";
+        description.textContent = message;
+        description.classList.add("shared-error");
+        info.classList.add("hidden");
+      }
+
+      const fileName = params.get("name");
+      const fileUrl = params.get("url");
+      const fileSize = Number(params.get("size"));
+      const fileType = params.get("type");
+
+      try {
+        const downloadUrl = new URL(fileUrl);
+        if (
+          downloadUrl.protocol !== "https:" ||
+          downloadUrl.hostname !== "filebin.net" ||
+          !/^\/[A-Za-z0-9_-]{8,60}\/[^/]+$/.test(downloadUrl.pathname) ||
+          !fileName
+        ) {
+          throw new Error("This link does not contain a valid Filebin download.");
+        }
+
+        title.textContent = fileName;
+        description.textContent = "Your file is ready to download.";
+        info.textContent = `${formatSize(fileSize)} · ${fileType || "File"} · Hosted by Filebin`;
+        download.href = downloadUrl.href;
+        download.classList.remove("hidden");
+        hostNote.classList.remove("hidden");
+      } catch (error) {
+        showError(error.message || "The download link could not be opened.");
+      }
     </script>
   </body>
 </html>
