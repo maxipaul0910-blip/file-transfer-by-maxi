@@ -709,6 +709,13 @@ nav a:hover {
   overflow-wrap: anywhere;
 }
 
+.upload-disclosure {
+  margin: 12px 0 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
 .tab-row {
   display: inline-flex;
   gap: 8px;

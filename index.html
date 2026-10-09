@@ -199,7 +199,7 @@
           <article>
             <div class="feature-icon">🔗</div>
             <h3>Shareable links</h3>
-            <p>Create a link to reopen a download saved in this browser profile.</p>
+            <p>Upload a file once and share its download link across devices.</p>
           </article>
         </div>
       </section>
@@ -221,6 +221,10 @@
           </label>
 
           <button type="submit" class="primary-btn wide">Upload and create link</button>
+          <p class="upload-disclosure">
+            Files are uploaded to Filebin and shared publicly through a link. Filebin deletes uploads automatically.
+            Do not upload sensitive files.
+          </p>
         </form>
 
         <div id="upload-message" class="upload-message"></div>
@@ -242,7 +246,6 @@
       </section>
     </main>
 
-    <script src="./upload-storage.js"></script>
     <script src="https://cdn.auth0.com/js/auth0-spa-js/2.18/auth0-spa-js.production.js"></script>
     <script src="./auth.js"></script>
     <script src="./app.js"></script>

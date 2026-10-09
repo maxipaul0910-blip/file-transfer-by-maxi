@@ -40,10 +40,16 @@ Do not open `index.html` directly with a `file://` URL. Auth0 redirects back to
 the URL of the page that started sign-in, so local testing needs the localhost
 URLs above registered.
 
-## Local file uploads
+## Uploads and share links
 
-Uploaded file contents are saved in this browser's IndexedDB, so opening the
-generated link later in the same browser profile continues to work. The link
-does not upload the file to a server: other people, devices, or browser profiles
-cannot access it. Public file sharing requires a storage service and a backend
-or upload API.
+The upload form sends files to [Filebin](https://filebin.net/) and creates a
+random bin for each upload. The resulting public link works from other devices
+and browser profiles. Filebin stores the file, not this repository, and removes
+uploads automatically. Files are sent to a third-party service and shared by
+public link; do not upload private or sensitive data. Links stop working when
+Filebin expires or removes the file, and its storage capacity can temporarily
+prevent uploads.
+
+Links created before this external upload integration are browser-local. Their
+file contents were never sent to a storage service, so upload the file again to
+create a shareable link.

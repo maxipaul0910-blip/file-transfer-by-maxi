@@ -9,6 +9,7 @@ const uploadForm = document.getElementById("upload-form");
 const fileInput = document.getElementById("file-input");
 const uploadMessage = document.getElementById("upload-message");
 const tabs = document.querySelectorAll(".tab");
+const FILEBIN_ORIGIN = "https://filebin.net";
 
 function formatSize(size) {
   if (!size) return "0 B";
@@ -22,27 +23,45 @@ function createCard(item, type) {
   const card = document.createElement("article");
   card.className = "file-card";
 
-  const badge = type === "repo" ? "Repo" : "Upload";
   const href = type === "upload"
     ? item.shareUrl || `./share.html?file=${encodeURIComponent(item.id)}`
     : item.url || item.downloadUrl || item.path || "#";
-  const shareHref = item.shareUrl || "";
+  const header = document.createElement("div");
+  header.className = "file-card-header";
+  const badge = document.createElement("span");
+  badge.className = "badge";
+  badge.textContent = type === "repo" ? "Repo" : "Upload";
+  header.appendChild(badge);
 
-  card.innerHTML = `
-    <div class="file-card-header">
-      <span class="badge">${badge}</span>
-    </div>
-    <h3 class="file-name">${item.name || item.originalName}</h3>
-    <p class="file-meta">
-      ${formatSize(item.size)}<br />
-      ${item.type || "application/octet-stream"}
-    </p>
+  const name = document.createElement("h3");
+  name.className = "file-name";
+  name.textContent = item.name || item.originalName || "Unnamed file";
 
-    <div class="file-actions">
-      <a class="file-link" href="${href}" target="_blank" rel="noreferrer">Open</a>
-      ${shareHref ? `<a class="file-link secondary" href="${shareHref}" target="_blank" rel="noreferrer">Share</a>` : ""}
-    </div>
-  `;
+  const metadata = document.createElement("p");
+  metadata.className = "file-meta";
+  metadata.textContent = `${formatSize(item.size)} · ${item.type || "application/octet-stream"}`;
+
+  const actions = document.createElement("div");
+  actions.className = "file-actions";
+  const openLink = document.createElement("a");
+  openLink.className = "file-link";
+  openLink.href = href;
+  openLink.target = "_blank";
+  openLink.rel = "noopener noreferrer";
+  openLink.textContent = "Open";
+  actions.appendChild(openLink);
+
+  if (type === "upload" && item.shareUrl) {
+    const shareLink = document.createElement("a");
+    shareLink.className = "file-link secondary";
+    shareLink.href = item.shareUrl;
+    shareLink.target = "_blank";
+    shareLink.rel = "noopener noreferrer";
+    shareLink.textContent = "Share";
+    actions.appendChild(shareLink);
+  }
+
+  card.append(header, name, metadata, actions);
 
   return card;
 }
@@ -85,11 +104,19 @@ function saveUploads() {
   localStorage.setItem("transferflow_uploads", JSON.stringify(state.uploads));
 }
 
-function makeShareLink(file) {
-  const fileId = file.id;
-  file.shareUrl = new URL(`./share.html?file=${encodeURIComponent(fileId)}`, window.location.href).href;
-  file.downloadUrl = file.shareUrl;
-  return file;
+function showUploadResult(file, metadataSaved) {
+  uploadMessage.replaceChildren();
+  const message = document.createElement("span");
+  message.textContent = metadataSaved
+    ? "Uploaded to Filebin. Anyone with this link can access the file: "
+    : "Uploaded to Filebin. Save this link; it could not be added to My uploads: ";
+
+  const link = document.createElement("a");
+  link.href = file.shareUrl;
+  link.target = "_blank";
+  link.rel = "noopener noreferrer";
+  link.textContent = file.shareUrl;
+  uploadMessage.append(message, link);
 }
 
 uploadForm.addEventListener("submit", async (event) => {
@@ -101,31 +128,59 @@ uploadForm.addEventListener("submit", async (event) => {
     return;
   }
 
-  const fileRecord = makeShareLink({
-    id: crypto.randomUUID ? crypto.randomUUID() : `file-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-    originalName: file.name,
-    name: file.name,
-    type: file.type || "application/octet-stream",
-    size: file.size,
-    path: "#",
-  });
-
   const submitButton = uploadForm.querySelector('button[type="submit"]');
   submitButton.disabled = true;
-  uploadMessage.textContent = "Saving your file in this browser…";
+  uploadMessage.textContent = "Uploading your file to Filebin…";
   try {
-    await window.uploadFileStorage.save(fileRecord.id, file);
-    state.uploads.unshift(fileRecord);
-    saveUploads();
-    renderUploads(state.uploads);
+    const binId = crypto.randomUUID().replaceAll("-", "");
+    const encodedFileName = encodeURIComponent(file.name);
+    const uploadUrl = `${FILEBIN_ORIGIN}/${binId}/${encodedFileName}`;
 
-    uploadMessage.textContent =
-      `Saved in this browser. This link works in the same browser profile only: ${fileRecord.shareUrl}`;
+    const response = await fetch(uploadUrl, {
+      method: "POST",
+      body: new Blob([file]),
+    });
+    const responseText = await response.text();
+    let result = null;
+    try {
+      result = JSON.parse(responseText);
+    } catch {
+      if (response.ok) {
+        throw new Error("Filebin returned an unreadable upload response.");
+      }
+    }
+    if (!response.ok || result?.bin?.id !== binId) {
+      const reason = responseText.trim().slice(0, 180);
+      throw new Error(`Filebin upload failed (HTTP ${response.status})${reason ? `: ${reason}` : "."}`);
+    }
+
+    const shareUrl = new URL(`/${binId}/${encodedFileName}`, FILEBIN_ORIGIN);
+
+    const fileRecord = {
+      id: binId,
+      originalName: file.name,
+      name: file.name,
+      type: file.type || "application/octet-stream",
+      size: file.size,
+      shareUrl: shareUrl.href,
+      url: shareUrl.href,
+      expires: result.bin.expired_at || null,
+    };
+
+    state.uploads.unshift(fileRecord);
+    let metadataSaved = true;
+    try {
+      saveUploads();
+    } catch (error) {
+      metadataSaved = false;
+      console.error("Could not save upload details in this browser:", error);
+    }
+    renderUploads(state.uploads);
+    showUploadResult(fileRecord, metadataSaved);
     fileInput.value = "";
   } catch (error) {
-    console.error("Could not save uploaded file:", error);
-    uploadMessage.textContent =
-      "The file could not be saved in this browser. Check available storage and try again.";
+    console.error("Could not upload file to Filebin:", error);
+    uploadMessage.textContent = `Upload failed: ${error.message || "Check your connection and try again."}`;
   } finally {
     submitButton.disabled = false;
   }
