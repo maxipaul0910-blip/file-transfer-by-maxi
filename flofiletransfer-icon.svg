@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title">
+  <title id="title">FloFileTransfer</title>
+  <defs>
+    <linearGradient id="tile" x1="72" y1="42" x2="450" y2="480" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#27d99a"/>
+      <stop offset="1" stop-color="#087b68"/>
+    </linearGradient>
+    <linearGradient id="paper" x1="154" y1="93" x2="366" y2="405" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#fff"/>
+      <stop offset="1" stop-color="#dffaf0"/>
+    </linearGradient>
+    <filter id="shadow" x="90" y="60" width="340" height="410" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="14" stdDeviation="14" flood-color="#063c38" flood-opacity=".3"/>
+    </filter>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="#092a32"/>
+  <rect x="18" y="18" width="476" height="476" rx="98" fill="url(#tile)"/>
+  <g filter="url(#shadow)">
+    <path d="M155 102a26 26 0 0 1 26-26h113l74 74v247a26 26 0 0 1-26 26H181a26 26 0 0 1-26-26V102Z" fill="url(#paper)"/>
+    <path d="M294 76v61a13 13 0 0 0 13 13h61" fill="#b8eee0"/>
+    <path d="M199 196h93M199 229h115" fill="none" stroke="#94cfc0" stroke-linecap="round" stroke-width="15"/>
+    <path d="M256 354v-83m0 0-35 35m35-35 35 35" fill="none" stroke="#078a71" stroke-linecap="round" stroke-linejoin="round" stroke-width="21"/>
+    <path d="M211 347v17a14 14 0 0 0 14 14h62a14 14 0 0 0 14-14v-17" fill="none" stroke="#078a71" stroke-linecap="round" stroke-width="18"/>
+  </g>
+</svg>
