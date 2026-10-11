@@ -33,10 +33,19 @@ and `github`.
 
 ### Run locally
 
-1. Add `http://localhost:8000/` to **Allowed Callback URLs** and **Allowed
-   Logout URLs**. Add `http://localhost:8000` to **Allowed Web Origins**.
-2. From the project folder run `python3 -m http.server 8000`.
-3. Open `http://localhost:8000/` and try Google or GitHub sign-in.
+1. Add the local origin you will actually use to Auth0 → Applications →
+   your SPA app. If you run the server on port 8765 (as `serve.py` does), add:
+   - **Allowed Callback URLs:** `http://127.0.0.1:8765/`
+   - **Allowed Logout URLs:** `http://127.0.0.1:8765/`
+   - **Allowed Web Origins:** `http://127.0.0.1:8765`
+
+   If you instead run `python3 -m http.server 8000`, add the same three with
+   `http://localhost:8000`. Note that Auth0 treats `127.0.0.1` and `localhost`
+   as different origins, so register whichever one you open in the browser.
+2. From the project folder run `python3 serve.py` (serves on port 8765) or
+   `python3 -m http.server 8000`.
+3. Open the matching URL (`http://127.0.0.1:8765/`) and try Google or GitHub
+   sign-in.
 
 Do not open `index.html` directly with a `file://` URL. Auth0 redirects back to
 the URL of the page that started sign-in, so local testing needs the localhost

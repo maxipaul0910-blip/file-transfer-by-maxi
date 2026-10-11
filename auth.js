@@ -111,13 +111,13 @@ function updateUI() {
   window.floAuthUser = currentUser;
   window.dispatchEvent(new CustomEvent("flo-auth-change", { detail: { user: currentUser } }));
   const dashboardGuest = document.getElementById("dashboard-guest");
-  if (dashboardGuest) dashboardGuest.classList.toggle("hidden", Boolean(currentUser));
+  if (dashboardGuest) dashboardGuest.classList.add("hidden");
   if (currentUser) {
     authToggleBtn.classList.add("hidden");
     profileToggleBtn.classList.remove("hidden");
     document.getElementById("user-avatar").src = currentUser.picture || "";
     document.getElementById("profile-name").textContent =
-      currentUser.name || currentUser.nickname || "User";
+      window.floDisplayName || currentUser.name || currentUser.nickname || "User";
     document.getElementById("profile-email").textContent = currentUser.email || "";
     document.getElementById("profile-avatar").src = currentUser.picture || "";
     document.getElementById("account-name").textContent =
@@ -283,7 +283,7 @@ githubLoginBtn.addEventListener("click", () => handleLogin("github", githubLogin
 
 profileToggleBtn.addEventListener("click", (event) => {
   event.stopPropagation();
-  profileMenu.classList.toggle("hidden");
+  openAccountDetails();
 });
 
 document.addEventListener("click", () => {

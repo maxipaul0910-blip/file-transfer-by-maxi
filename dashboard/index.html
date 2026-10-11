@@ -3,15 +3,15 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Personal dashboard · FloFileTransfer</title>
+  <title>Profile Overview · FloFileTransfer</title>
     <meta name="description" content="Modern file transfer and sharing app" />
     <link rel="icon" type="image/svg+xml" href="../flofiletransfer-icon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="../styles.css" />
+    <link rel="stylesheet" href="../styles.css?v=20261011-html-web-share" />
   </head>
-  <body class="dashboard-page">
+  <body class="dashboard-page has-sidebar">
     <div class="bg-orb orb-1"></div>
     <div class="bg-orb orb-2"></div>
 
@@ -63,7 +63,7 @@
       <a class="profile-link" href="#dashboard">Personal dashboard</a>
       <a class="profile-link" href="#settings">Personal settings</a>
       <button type="button" class="profile-link" id="profile-uploads-btn">View my uploads</button>
-      <button id="logout-btn" class="profile-link danger">Sign out</button>
+      <button id="logout-btn" class="profile-link danger logout-action" aria-label="Sign out" title="Sign out"><span class="logout-sign" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M10 17l5-5-5-5M15 12H3m9-7h6a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-6"/></svg></span><span class="logout-label">Sign out</span></button>
     </div>
 
     <div id="account-modal" class="modal hidden">
@@ -104,23 +104,23 @@
       </section>
     </div>
 
-    <header class="topbar">
-      <div class="brand">
-        <img class="brand-mark" src="../flofiletransfer-icon.svg" alt="" />
-        <span>FloFileTransfer</span>
-      </div>
-      <nav>
-        <a href="../#features">Features</a>
-        <a href="../#upload">Upload</a>
-        <a href="#files">Files</a>
+    <aside id="app-sidebar" class="app-sidebar" aria-label="Main navigation">
+      <a class="sidebar-brand" href="../" aria-label="FloFileTransfer home"><img src="../flofiletransfer-icon.svg" alt="" /><span>FloFileTransfer</span></a>
+      <span class="sidebar-label">Workspace</span>
+      <nav class="sidebar-nav" aria-label="Workspace">
+        <a class="sidebar-link" href="../" title="Home"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1V10Z" /></svg><span>Home</span></a>
+        <a class="sidebar-link" href="../#upload" title="Upload files"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M4 15v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4" /></svg><span>Upload files</span></a>
+        <a class="sidebar-link" href="#files" title="My files"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7.5A1.5 1.5 0 0 1 4.5 6h5l2 2h8A1.5 1.5 0 0 1 21 9.5v8a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 17.5v-10Z" /></svg><span>My files</span></a>
+        <a class="sidebar-link active" href="#dashboard" title="Dashboard" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="5" rx="1.5"/><rect x="13" y="10" width="8" height="11" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/></svg><span>Dashboard</span></a>
+        <a class="sidebar-link" href="#settings" title="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/><path d="m19.4 15 .1.1a1.7 1.7 0 0 1-2.4 2.4l-.1-.1a1.7 1.7 0 0 0-2.9 1.2v.2a1.7 1.7 0 0 1-3.4 0v-.2a1.7 1.7 0 0 0-2.9-1.2l-.1.1a1.7 1.7 0 0 1-2.4-2.4l.1-.1a1.7 1.7 0 0 0-1.2-2.9H4a1.7 1.7 0 0 1 0-3.4h.2a1.7 1.7 0 0 0 1.2-2.9l-.1-.1a1.7 1.7 0 0 1 2.4-2.4l.1.1a1.7 1.7 0 0 0 2.9-1.2V2a1.7 1.7 0 0 1 3.4 0v.2a1.7 1.7 0 0 0 2.9 1.2l.1-.1a1.7 1.7 0 0 1 2.4 2.4l-.1.1a1.7 1.7 0 0 0 1.2 2.9h.2a1.7 1.7 0 0 1 0 3.4h-.2a1.7 1.7 0 0 0-1.2 2.9Z"/></svg><span>Settings</span></a>
+        <a class="sidebar-link hidden" id="sidebar-admin-link" href="#admin" title="Admin panel"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 20 6v5c0 5-3.4 8.2-8 10-4.6-1.8-8-5-8-10V6l8-3Z"/><path d="m9 12 2 2 4-4"/></svg><span>Admin panel</span></a>
       </nav>
-      <div class="topbar-actions">
-        <button id="auth-toggle-btn" class="auth-toggle-btn">Sign in</button>
-        <button id="profile-toggle-btn" class="profile-toggle-btn hidden">
-          <img id="user-avatar" src="" alt="User" class="user-avatar">
-        </button>
-      </div>
-    </header>
+      <div class="sidebar-bottom"><div class="sidebar-auth-actions"><button id="auth-toggle-btn" class="auth-toggle-btn" type="button" title="Sign in">Sign in</button><button id="profile-toggle-btn" class="profile-toggle-btn hidden" type="button" aria-label="Open profile menu" title="Open profile menu"><img id="user-avatar" src="" alt="User" class="user-avatar"><span class="sidebar-user"><span id="sidebar-user-name" class="sidebar-user-name"></span><span id="sidebar-user-nick" class="sidebar-user-nick"></span><span id="sidebar-user-roles" class="sidebar-user-roles hidden" aria-label="Your roles"></span></span></button></div><a class="sidebar-star" href="https://github.com/maxipaul0910-blip/file-transfer-by-maxi" target="_blank" rel="noopener noreferrer" title="Star FloFileTransfer on GitHub"><span class="sidebar-star-shine" aria-hidden="true"></span><svg class="sidebar-github-mark" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .9a11.1 11.1 0 0 0-3.51 21.63c.55.1.76-.24.76-.53v-2.08c-3.1.68-3.76-1.32-3.76-1.32-.5-1.29-1.24-1.63-1.24-1.63-1.02-.7.08-.68.08-.68 1.13.08 1.73 1.16 1.73 1.16 1 1.72 2.63 1.22 3.27.94.1-.73.39-1.22.71-1.51-2.47-.28-5.06-1.24-5.06-5.5 0-1.22.44-2.21 1.16-2.99-.12-.29-.5-1.45.11-3.02 0 0 .95-.3 3.05 1.14a10.6 10.6 0 0 1 5.55 0c2.1-1.44 3.05-1.14 3.05-1.14.61 1.57.23 2.73.11 3.02.72.78 1.16 1.77 1.16 2.99 0 4.27-2.6 5.22-5.08 5.5.4.35.75 1.02.75 2.06V22c0 .3.2.64.76.53A11.1 11.1 0 0 0 12 .9Z"/></svg><span>Star on GitHub</span><span class="sidebar-star-count" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8-6.2-3.3-6.2 3.3L7 14.2 2 9.3l6.9-1L12 2Z"/></svg></span></a><label class="sidebar-compact-row" title="Use a compact sidebar"><span class="sidebar-compact-label">Compact</span><input id="sidebar-compact-toggle" type="checkbox" aria-label="Compact sidebar" /><span class="sidebar-switch-track" aria-hidden="true"><span></span></span></label></div>
+    </aside>
+    <button id="sidebar-backdrop" class="sidebar-backdrop" type="button" aria-label="Close navigation"></button>
+
+    <button id="sidebar-open-btn" class="sidebar-open-btn" type="button" aria-label="Open navigation" aria-controls="app-sidebar" aria-expanded="false"><span></span><span></span><span></span></button>
+
 
     <main class="container">
       <section id="dashboard-guest" class="dashboard-guest hidden">
@@ -140,7 +140,12 @@
 
           <div class="cta-row">
           <a class="primary-btn" href="../#upload">Upload a file</a>
-          <a class="secondary-btn" href="#files">Browse files</a>
+          <a class="secondary-btn uiverse-button" href="#files">
+            <span class="uiverse-button-text">Browse files</span>
+            <span class="uiverse-button-circle" aria-hidden="true"></span>
+            <svg class="uiverse-arrow uiverse-arrow-right" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4.5 12h14m0 0-5.5-5.5M18.5 12 13 17.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
+            <svg class="uiverse-arrow uiverse-arrow-left" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4.5 12h14m0 0-5.5-5.5M18.5 12 13 17.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
+          </a>
           </div>
 
           <div class="stats">
@@ -230,7 +235,10 @@
             </div>
           </label>
 
-          <button type="submit" class="primary-btn wide">Upload and create links</button>
+          <button type="submit" class="primary-btn wide uiverse-upload-btn">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M4 15v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></svg>
+            <span>Upload and create links</span>
+          </button>
           <p class="upload-disclosure">
             Files are uploaded to Filebin and shared publicly through a link. Filebin deletes uploads automatically.
             Do not upload sensitive files.
@@ -277,16 +285,16 @@
         <div id="uploaded-list" class="file-list"></div>
       </section>
 
-      <section id="dashboard" class="dashboard-section hidden" aria-labelledby="dashboard-title">
+      <section id="dashboard" class="dashboard-section" aria-labelledby="dashboard-title">
         <div class="section-title">
-          <span>Your workspace</span>
-          <h2 id="dashboard-title">Personal dashboard</h2>
+          <span>Your profile</span>
+          <h2 id="dashboard-title">Profile Overview</h2>
         </div>
         <div class="dashboard-identity">
           <img id="dashboard-avatar" class="dashboard-avatar" alt="" />
           <div><strong id="dashboard-name"></strong><span id="dashboard-email"></span></div>
         </div>
-        <dl class="dashboard-account-details">
+        <dl class="dashboard-account-details profile-account-only">
           <div><dt>Sign-in provider</dt><dd id="dashboard-provider">—</dd></div>
           <div><dt>Email status</dt><dd id="dashboard-email-status">—</dd></div>
           <div><dt>Upload history</dt><dd>Saved in this browser for this account</dd></div>
@@ -301,10 +309,10 @@
           <article class="dashboard-card"><h3>Favorite files</h3><div id="dashboard-favorite-list"></div></article>
         </div>
         <div class="dashboard-shortcuts">
-          <button type="button" class="secondary-btn" id="dashboard-account-btn">Account details</button>
+          <button type="button" class="secondary-btn profile-account-only" id="dashboard-account-btn">Account details</button>
           <a class="primary-btn" href="../#upload">Upload files</a>
           <button type="button" class="secondary-btn" id="dashboard-history-btn">Manage upload history</button>
-          <a class="secondary-btn" href="#settings">Personal settings</a>
+          <a class="secondary-btn" href="#settings">Profile settings</a>
           <a class="secondary-btn hidden" id="dashboard-admin-link" href="#admin">Admin panel</a>
         </div>
       </section>
@@ -315,9 +323,15 @@
         <p>Your account has beta access. New preview features that use this permission will appear here.</p>
       </section>
 
-      <section id="settings" class="settings-section hidden" aria-labelledby="settings-title">
-        <div class="section-title"><span>Personal settings</span><h2 id="settings-title">Your preferences</h2></div>
+      <section id="settings" class="settings-section" aria-labelledby="settings-title">
+        <div class="section-title"><span>Profile settings</span><h2 id="settings-title">Your profile</h2></div>
         <div class="settings-card">
+          <form id="profile-name-form" class="profile-name-setting">
+            <label for="profile-name-input">Profile name</label>
+            <p class="settings-note">Choose the name shown beside files you share. For guests, this stays in this browser; signed-in names are saved for this account in this browser.</p>
+            <div class="profile-name-controls"><input id="profile-name-input" type="text" maxlength="40" autocomplete="nickname" placeholder="Anonymous sender" /><button type="submit" class="primary-btn">Save profile name</button></div>
+            <p id="profile-name-feedback" class="account-feedback" role="status" aria-live="polite"></p>
+          </form>
           <div class="design-setting">
             <div>
               <strong>Background gradient</strong>
@@ -383,7 +397,7 @@
 
     <script src="https://cdn.auth0.com/js/auth0-spa-js/2.18/auth0-spa-js.production.js"></script>
     <script src="../auth.js?v=worker-audience-consent"></script>
-    <script src="../role-admin.js"></script>
-    <script src="../app.js"></script>
+    <script src="../role-admin.js?v=20261011-nicknames-roles"></script>
+    <script src="../app.js?v=20261011-feedback-tdz-fix"></script>
   </body>
 </html>

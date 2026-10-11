@@ -3,6 +3,7 @@
   const adminSection = document.getElementById("admin");
   const adminMenuLink = document.getElementById("admin-menu-link");
   const dashboardAdminLink = document.getElementById("dashboard-admin-link");
+  const sidebarAdminLink = document.getElementById("sidebar-admin-link");
   const betaPreview = document.getElementById("beta-preview-card");
   const status = document.getElementById("admin-status");
   const roleForm = document.getElementById("admin-role-form");
@@ -13,10 +14,13 @@
   const userList = document.getElementById("admin-user-list");
   let overview = { roles: [], permissions: [], users: [] };
   let busy = false;
+  window.floUserRoles = [];
+  window.floRolesReady = Promise.resolve([]);
 
   function setAdminLinks(visible) {
     adminMenuLink?.classList.toggle("hidden", !visible);
     dashboardAdminLink?.classList.toggle("hidden", !visible);
+    sidebarAdminLink?.classList.toggle("hidden", !visible);
   }
 
   function setAdminSection(visible) {
@@ -182,6 +186,8 @@
   }
 
   async function initialize(user) {
+    window.floUserRoles = [];
+    window.floRolesReady = Promise.resolve([]);
     setAdminLinks(false);
     setAdminSection(false);
     setStatus("");
@@ -191,7 +197,16 @@
 
     const isBootstrapAdmin = candidateForBootstrapAdmin(user);
     try {
-      const access = await request("/api/me");
+      const accessRequest = request("/api/me");
+      window.floRolesReady = accessRequest.then((access) => {
+        const roles = Array.isArray(access.roles)
+          ? access.roles.map((role) => ({ id: role.id, name: role.name })).filter((role) => role.name)
+          : [];
+        if (isBootstrapAdmin) roles.unshift({ id: "owner", name: "Owner" });
+        window.floUserRoles = roles;
+        return roles;
+      }).catch(() => []);
+      const access = await accessRequest;
       const permissions = new Set(access.permissions || []);
       const canManageRoles = permissions.has("roles:manage") && permissions.has("users:manage");
       setAdminLinks(canManageRoles);

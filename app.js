@@ -14,6 +14,7 @@ const DEFAULT_SETTINGS = {
   concurrency: 3,
   gradientStart: "#17b77d",
   gradientEnd: "#42d0a2",
+  senderNickname: "",
 };
 
 const state = {
@@ -64,6 +65,10 @@ function normalizeHexColor(value, fallback) {
   return typeof value === "string" && /^#[0-9a-f]{6}$/i.test(value) ? value : fallback;
 }
 
+function normalizeSenderNickname(value) {
+  return String(value || "").replace(/[\u0000-\u001f\u007f]/g, "").replace(/\s+/g, " ").trim().slice(0, 40);
+}
+
 function colorChannels(hex) {
   return [1, 3, 5].map((index) => Number.parseInt(hex.slice(index, index + 2), 16));
 }
@@ -98,6 +103,7 @@ function loadSettings() {
   state.settings.showSize = state.settings.showSize !== false;
   state.settings.gradientStart = normalizeHexColor(state.settings.gradientStart, DEFAULT_SETTINGS.gradientStart);
   state.settings.gradientEnd = normalizeHexColor(state.settings.gradientEnd, DEFAULT_SETTINGS.gradientEnd);
+  state.settings.senderNickname = normalizeSenderNickname(state.settings.senderNickname);
   if (![1, 2, 3].includes(Number(state.settings.concurrency))) state.settings.concurrency = DEFAULT_SETTINGS.concurrency;
   else state.settings.concurrency = Number(state.settings.concurrency);
   const defaultView = document.getElementById("setting-default-view");
@@ -106,6 +112,7 @@ function loadSettings() {
   const showSize = document.getElementById("setting-show-size");
   const gradientStart = document.getElementById("setting-gradient-start");
   const gradientEnd = document.getElementById("setting-gradient-end");
+  const profileNameInput = document.getElementById("profile-name-input");
   const uploadSort = document.getElementById("upload-sort");
   if (defaultView) defaultView.value = state.settings.defaultView;
   if (settingSort) settingSort.value = state.settings.sort;
@@ -113,16 +120,21 @@ function loadSettings() {
   if (showSize) showSize.checked = state.settings.showSize;
   if (gradientStart) gradientStart.value = state.settings.gradientStart;
   if (gradientEnd) gradientEnd.value = state.settings.gradientEnd;
+  if (profileNameInput) profileNameInput.value = state.settings.senderNickname;
   if (uploadSort) uploadSort.value = state.settings.sort;
   applyGradientSettings();
 }
 
-function makeBrandedShareUrl(file, downloadUrl) {
+async function makeBrandedShareUrl(file, downloadUrl) {
   const shareUrl = new URL("share.html", APP_ROOT);
   shareUrl.searchParams.set("url", downloadUrl);
   shareUrl.searchParams.set("name", file.name);
   shareUrl.searchParams.set("size", String(file.size));
   shareUrl.searchParams.set("type", file.type || "application/octet-stream");
+  // The sender name is self-reported and unverified (no backend to authenticate it),
+  // so it is only ever displayed as "Shared by (self-reported)" on the share page.
+  const senderName = normalizeSenderNickname(state.settings.senderNickname) || "Anonymous sender";
+  shareUrl.searchParams.set("from", senderName);
   return shareUrl.href;
 }
 
@@ -149,9 +161,26 @@ async function copyText(text, feedback) {
   try {
     await navigator.clipboard.writeText(text);
     feedback.textContent = "Link copied.";
+    return true;
   } catch (error) {
     feedback.textContent = "Could not copy the link. Select and copy it manually.";
+    return false;
   }
+}
+
+function appendGlassCopyButton(container, href, feedback) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "glass-plaque-btn copy-link-btn";
+  button.setAttribute("aria-label", "Copy share link");
+  button.innerHTML = '<span class="glass-plaque-frame" aria-hidden="true"></span><span class="glass-plaque-text">Copy link</span><span class="glass-plaque-text glass-plaque-success">Address copied</span><i class="glass-plaque-point top left" aria-hidden="true"></i><i class="glass-plaque-point top right" aria-hidden="true"></i><i class="glass-plaque-point bottom left" aria-hidden="true"></i><i class="glass-plaque-point bottom right" aria-hidden="true"></i>';
+  button.addEventListener("click", async () => {
+    if (await copyText(href, feedback)) {
+      button.classList.add("copied");
+      window.setTimeout(() => button.classList.remove("copied"), 1800);
+    }
+  });
+  container.appendChild(button);
 }
 
 function createCard(item, type) {
@@ -187,8 +216,23 @@ function createCard(item, type) {
   openLink.textContent = "Open";
   actions.appendChild(openLink);
 
+  const feedback = document.createElement("p");
+  feedback.className = "card-feedback";
+  feedback.setAttribute("role", "status");
+
   if (type === "upload") {
-    appendActionButton(actions, "Copy link", () => copyText(href, feedback));
+    appendGlassCopyButton(actions, href, feedback);
+    if (item.isHtml) {
+      appendActionButton(actions, "Open as site", () => {
+        window.open(item.webShareUrl || href, "_blank", "noopener");
+      }, "secondary-btn compact-btn open-site-btn");
+    }
+    appendActionButton(actions, "Share", async () => {
+      if (navigator.share) {
+        try { await navigator.share({ title: item.name || "Shared file", text: "File shared with FloFileTransfer", url: href }); }
+        catch (error) { if (error.name !== "AbortError") copyText(href, feedback); }
+      } else copyText(href, feedback);
+    }, "secondary-btn compact-btn share-file-btn");
     appendActionButton(actions, item.favorite ? "★ Favorited" : "☆ Favorite", () => {
       item.favorite = !item.favorite;
       persistAndRender();
@@ -226,9 +270,6 @@ function createCard(item, type) {
     linkText.className = "share-url-text";
     linkText.textContent = href;
     card.appendChild(linkText);
-    const feedback = document.createElement("p");
-    feedback.className = "card-feedback";
-    feedback.setAttribute("role", "status");
     card.appendChild(feedback);
     appendActionButton(actions, "Remove from history", () => {
       if (!window.confirm(`Remove “${item.name || item.originalName || "this file"}” from the local upload history? The Filebin-hosted file and public download link will remain until Filebin expires or removes it. The local entry cannot be restored unless you have an export.`)) return;
@@ -318,34 +359,73 @@ function updateProfileSummary() {
   if (account) account.textContent = summary;
 }
 
+function renderSidebarRoles() {
+  const rolesEl = document.getElementById("sidebar-user-roles");
+  if (!rolesEl) return;
+  const roles = Array.isArray(window.floUserRoles) ? window.floUserRoles : [];
+  rolesEl.replaceChildren();
+  roles.slice(0, 4).forEach((role) => {
+    const name = (role && role.name) || "";
+    if (!name) return;
+    const badge = document.createElement("span");
+    const normalized = name.toLocaleLowerCase();
+    badge.className = "sidebar-role-badge";
+    if (normalized === "owner") badge.classList.add("role-owner");
+    else if (normalized === "admin") badge.classList.add("role-admin");
+    else if (normalized.includes("beta")) badge.classList.add("role-beta");
+    badge.textContent = name.slice(0, 24);
+    rolesEl.appendChild(badge);
+  });
+  rolesEl.classList.toggle("hidden", rolesEl.childElementCount === 0);
+}
+
+function updateSidebarIdentity() {
+  const nameEl = document.getElementById("sidebar-user-name");
+  const nickEl = document.getElementById("sidebar-user-nick");
+  if (!nameEl || !nickEl) return;
+  const user = state.user;
+  const accountName = (user && (user.name || user.nickname)) || window.floDisplayName || "";
+  const nick = normalizeSenderNickname(state.settings && state.settings.senderNickname);
+  const primary = accountName || nick || "User";
+  nameEl.textContent = primary;
+  const showNick = Boolean(nick) && nick.toLowerCase() !== primary.toLowerCase();
+  nickEl.textContent = showNick ? nick : "";
+  nickEl.classList.toggle("hidden", !showNick);
+}
+
 function renderDashboard() {
   const dashboard = document.getElementById("dashboard");
   const settingsSection = document.getElementById("settings");
   if (!dashboard) return;
-  dashboard.classList.toggle("hidden", !state.user);
-  settingsSection?.classList.toggle("hidden", !state.user);
+  dashboard.classList.remove("hidden");
+  settingsSection?.classList.remove("hidden");
   document.getElementById("upload-tools")?.classList.toggle("hidden", !state.user);
-  if (!state.user) return;
-
   const user = state.user;
-  document.getElementById("dashboard-name").textContent = user.name || user.nickname || "User";
-  document.getElementById("dashboard-email").textContent = user.email || "No email provided";
-  const provider = user.sub?.split("|", 1)[0];
-  document.getElementById("dashboard-provider").textContent = provider === "google-oauth2"
+  document.querySelectorAll(".profile-account-only").forEach((element) => element.classList.toggle("hidden", !user));
+  const profileName = normalizeSenderNickname(state.settings.senderNickname);
+  const displayName = profileName || user?.name || user?.nickname || "Guest profile";
+  document.getElementById("dashboard-name").textContent = displayName;
+  document.getElementById("dashboard-email").textContent = user?.email || (profileName ? "Guest profile · saved in this browser" : "Set a profile name in settings");
+  const provider = user?.sub?.split("|", 1)[0];
+  const providerElement = document.getElementById("dashboard-provider");
+  const emailStatusElement = document.getElementById("dashboard-email-status");
+  if (providerElement) providerElement.textContent = provider === "google-oauth2"
     ? "Google"
     : provider === "github"
       ? "GitHub"
       : provider
         ? "Auth0"
         : "Signed in";
-  document.getElementById("dashboard-email-status").textContent = user.email
-    ? user.email_verified
-      ? "Verified"
-      : "Not verified"
+  if (emailStatusElement) emailStatusElement.textContent = user?.email
+    ? user.email_verified ? "Verified" : "Not verified"
     : "Not provided";
   const avatar = document.getElementById("dashboard-avatar");
-  avatar.src = user.picture || "";
-  avatar.alt = user.name ? `${user.name}'s profile` : "Profile";
+  avatar.src = user?.picture || "";
+  avatar.alt = `${displayName}'s profile`;
+  avatar.classList.toggle("hidden", !user?.picture);
+  window.floDisplayName = displayName;
+  const profileMenuName = document.getElementById("profile-name");
+  if (profileMenuName && user) profileMenuName.textContent = displayName;
   const total = state.uploads.reduce((sum, item) => sum + (Number(item.size) > 0 ? Number(item.size) : 0), 0);
   document.getElementById("dashboard-count").textContent = String(state.uploads.length);
   document.getElementById("dashboard-size").textContent = formatSize(total);
@@ -428,6 +508,61 @@ function renderQueue(entries) {
   });
 }
 
+function fileExtension(name) {
+  const dot = String(name || "").lastIndexOf(".");
+  return dot > 0 ? name.slice(dot + 1).toLowerCase().slice(0, 4) : "";
+}
+
+function renderFilePreview() {
+  const preview = document.getElementById("file-preview");
+  const list = document.getElementById("file-preview-list");
+  const summary = document.getElementById("file-preview-summary");
+  if (!preview || !list || !summary) return;
+  const files = [...fileInput.files];
+  list.replaceChildren();
+  if (!files.length) {
+    preview.classList.add("hidden");
+    return;
+  }
+  preview.classList.remove("hidden");
+  const totalSize = files.reduce((sum, file) => sum + file.size, 0);
+  summary.textContent = `${files.length} ${files.length === 1 ? "file" : "files"} ready · ${formatSize(totalSize)}`;
+  files.forEach((file, index) => {
+    const item = document.createElement("li");
+    item.className = "file-preview-item";
+    const thumb = document.createElement("span");
+    thumb.className = "file-preview-thumb";
+    const ext = fileExtension(file.name);
+    thumb.textContent = ext ? ext.toUpperCase() : "•";
+    thumb.title = file.type || "Unknown type";
+    const info = document.createElement("div");
+    info.className = "file-preview-info";
+    const name = document.createElement("span");
+    name.className = "file-preview-name";
+    name.textContent = file.name;
+    const meta = document.createElement("span");
+    meta.className = "file-preview-meta";
+    meta.textContent = `${formatSize(file.size)}${file.type ? ` · ${file.type}` : ""}`;
+    info.append(name, meta);
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.className = "file-preview-remove";
+    remove.setAttribute("aria-label", `Remove ${file.name} from selection`);
+    remove.title = "Remove";
+    remove.textContent = "×";
+    remove.addEventListener("click", () => {
+      const dataTransfer = new DataTransfer();
+      [...fileInput.files].forEach((current, currentIndex) => {
+        if (currentIndex !== index) dataTransfer.items.add(current);
+      });
+      fileInput.files = dataTransfer.files;
+      renderFilePreview();
+    });
+    item.append(thumb, info, remove);
+    list.appendChild(item);
+  });
+}
+
 async function uploadOne(file) {
   const binId = crypto.randomUUID().replaceAll("-", "");
   const encodedFileName = encodeURIComponent(file.name);
@@ -447,13 +582,14 @@ async function uploadOne(file) {
     throw new Error(`Filebin upload failed (HTTP ${response.status})${reason ? `: ${reason}` : "."}`);
   }
   const downloadUrl = new URL(`/${binId}/${encodedFileName}`, FILEBIN_ORIGIN).href;
+  const shareUrl = await makeBrandedShareUrl(file, downloadUrl);
   return {
     id: binId,
     originalName: file.name,
     name: file.name,
     type: file.type || "application/octet-stream",
     size: file.size,
-    shareUrl: makeBrandedShareUrl(file, downloadUrl),
+    shareUrl,
     url: downloadUrl,
     expires: result.bin.expired_at || null,
     createdAt: new Date().toISOString(),
@@ -510,6 +646,7 @@ uploadForm.addEventListener("submit", async (event) => {
     uploadMessage.textContent = "Upload completed, but this browser could not save the upload history. Copy successful links from the list above.";
   }
   fileInput.value = "";
+  renderFilePreview();
   renderUploads();
   updateProfileSummary();
   submitButton.disabled = false;
@@ -526,7 +663,7 @@ document.getElementById("dashboard-history-btn")?.addEventListener("click", () =
 });
 
 function exportUploads(format) {
-  const fields = ["name", "type", "size", "createdAt", "url", "shareUrl", "expires", "favorite", "tags", "note"];
+  const fields = ["name", "type", "size", "createdAt", "url", "shareUrl", "webShareUrl", "isHtml", "expires", "favorite", "tags", "note"];
   let content;
   let type;
   let extension;
@@ -600,7 +737,30 @@ document.getElementById("reset-settings")?.addEventListener("click", () => {
   renderUploads();
 });
 
+document.getElementById("profile-name-form")?.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const input = document.getElementById("profile-name-input");
+  state.settings.senderNickname = normalizeSenderNickname(input?.value);
+  if (input) input.value = state.settings.senderNickname;
+  const feedback = document.getElementById("profile-name-feedback");
+  try {
+    saveSettings();
+    if (feedback) feedback.textContent = state.settings.senderNickname
+      ? "Profile name saved. New shared files will show this name."
+      : "Profile name cleared. New shared files will show Anonymous sender.";
+    renderDashboard();
+    updateSidebarIdentity();
+  } catch (error) {
+    if (feedback) feedback.textContent = "Could not save your profile name in this browser.";
+  }
+});
+
 const dropzone = document.querySelector(".dropzone");
+fileInput.addEventListener("change", renderFilePreview);
+document.getElementById("file-preview-clear")?.addEventListener("click", () => {
+  fileInput.value = "";
+  renderFilePreview();
+});
 dropzone.addEventListener("dragover", (event) => {
   event.preventDefault();
   dropzone.classList.add("drag-over");
@@ -613,7 +773,8 @@ dropzone.addEventListener("drop", (event) => {
   dropzone.classList.remove("drag-over");
   if (event.dataTransfer?.files?.length) {
     fileInput.files = event.dataTransfer.files;
-    uploadMessage.textContent = `${fileInput.files.length} ${fileInput.files.length === 1 ? "file" : "files"} ready to upload.`;
+    renderFilePreview();
+    uploadMessage.textContent = "";
   }
 });
 
@@ -621,6 +782,15 @@ function switchUser(user) {
   const previousOwner = state.owner;
   state.user = user || null;
   state.owner = state.user?.sub || "anonymous";
+  if (previousOwner === "anonymous" && state.user) {
+    try {
+      const guestSettings = JSON.parse(localStorage.getItem("transferflow_settings:anonymous") || "{}");
+      const accountSettings = JSON.parse(localStorage.getItem(settingsKey()) || "{}");
+      if (!normalizeSenderNickname(accountSettings.senderNickname) && normalizeSenderNickname(guestSettings.senderNickname)) {
+        localStorage.setItem(settingsKey(), JSON.stringify({ ...accountSettings, senderNickname: normalizeSenderNickname(guestSettings.senderNickname) }));
+      }
+    } catch (error) { /* keep the signed-in nickname editable even if migration is unavailable */ }
+  }
   if (previousOwner === state.owner && state.uploads.length) {
     renderDashboard();
     return;
@@ -633,6 +803,9 @@ function switchUser(user) {
   if (favoritesOnly) favoritesOnly.checked = false;
   renderUploads();
   updateProfileSummary();
+  renderDashboard();
+  updateSidebarIdentity();
+  renderSidebarRoles();
   setActiveTab(document.body.classList.contains("dashboard-page") ? "uploaded" : state.settings.defaultView);
   if (state.user && previousOwner !== state.owner) {
     const dashboard = document.getElementById("dashboard");
@@ -661,7 +834,61 @@ document.addEventListener("storage", (event) => {
     updateProfileSummary();
   }
 });
-window.addEventListener("flo-auth-change", (event) => switchUser(event.detail?.user));
+window.addEventListener("flo-auth-change", (event) => {
+  switchUser(event.detail?.user || null);
+  updateSidebarIdentity();
+  renderSidebarRoles();
+  if (window.floRolesReady && typeof window.floRolesReady.then === "function") {
+    window.floRolesReady.then(() => renderSidebarRoles()).catch(() => {});
+  }
+});
+
+(() => {
+  const sidebar = document.getElementById("app-sidebar");
+  const toggle = document.getElementById("sidebar-compact-toggle");
+  const opener = document.getElementById("sidebar-open-btn");
+  const backdrop = document.getElementById("sidebar-backdrop");
+  if (!sidebar || !toggle || !opener || !backdrop) return;
+  const compactKey = "flo-sidebar-compact";
+  const hiddenKey = "flo-sidebar-hidden";
+  try { toggle.checked = localStorage.getItem(compactKey) === "true"; } catch (error) { /* use expanded default */ }
+  document.body.classList.toggle("sidebar-compact", toggle.checked);
+  let sidebarHidden = false;
+  try { sidebarHidden = localStorage.getItem(hiddenKey) === "true"; } catch (error) { /* keep the sidebar visible */ }
+  const isMobile = window.matchMedia("(max-width: 900px)").matches;
+  document.body.classList.toggle("sidebar-hidden", sidebarHidden);
+  document.body.classList.toggle("sidebar-toggle-on", isMobile ? false : !sidebarHidden);
+  opener.setAttribute("aria-expanded", String(isMobile ? false : !sidebarHidden));
+  opener.setAttribute("aria-label", isMobile ? "Open navigation" : sidebarHidden ? "Show navigation" : "Hide navigation");
+  toggle.addEventListener("change", () => {
+    document.body.classList.toggle("sidebar-compact", toggle.checked);
+    try { localStorage.setItem(compactKey, String(toggle.checked)); } catch (error) { /* preference remains active for this page */ }
+  });
+  const setOpen = (open) => {
+    const isMobile = window.matchMedia("(max-width: 900px)").matches;
+    if (isMobile) {
+      document.body.classList.toggle("sidebar-open", open);
+      document.body.classList.toggle("sidebar-toggle-on", open);
+      opener.setAttribute("aria-expanded", String(open));
+      opener.setAttribute("aria-label", open ? "Close navigation" : "Open navigation");
+    } else {
+      document.body.classList.toggle("sidebar-hidden", !open);
+      document.body.classList.toggle("sidebar-toggle-on", open);
+      opener.setAttribute("aria-expanded", String(open));
+      opener.setAttribute("aria-label", open ? "Hide navigation" : "Show navigation");
+      try { localStorage.setItem(hiddenKey, String(!open)); } catch (error) { /* keep the current page state */ }
+    }
+  };
+  opener.addEventListener("click", () => {
+    const isMobile = window.matchMedia("(max-width: 900px)").matches;
+    setOpen(isMobile
+      ? !document.body.classList.contains("sidebar-open")
+      : document.body.classList.contains("sidebar-hidden"));
+  });
+  backdrop.addEventListener("click", () => setOpen(false));
+  sidebar.querySelectorAll("a").forEach((link) => link.addEventListener("click", () => setOpen(false)));
+  document.addEventListener("keydown", (event) => { if (event.key === "Escape") setOpen(false); });
+})();
 
 loadSettings();
 state.uploads = readArray(currentUploadsKey());
@@ -669,3 +896,8 @@ loadRepoFiles();
 renderUploads();
 updateProfileSummary();
 setActiveTab(document.body.classList.contains("dashboard-page") ? "uploaded" : state.settings.defaultView);
+updateSidebarIdentity();
+renderSidebarRoles();
+if (window.floRolesReady && typeof window.floRolesReady.then === "function") {
+  window.floRolesReady.then(() => renderSidebarRoles()).catch(() => {});
+}
