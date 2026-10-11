@@ -14,9 +14,39 @@ const AUTH0_CONFIG = {
   domain: "dev-1f0dklchqlhbqxcy.us.auth0.com",
   clientId: "aoPKSPkKMnUqVXAcbkQE6l3YcKGJuePi",
 };
-const redirectUri = window.location.origin + window.location.pathname;
+const AUTHZ_API_CONFIG = {
+  // Set this to the deployed Worker URL after completing worker/README.md.
+  baseUrl: "https://flofiletransfer-roles.maxi-paul0910-d91.workers.dev",
+  audience: "https://flofiletransfer-roles.maxi-paul0910-d91.workers.dev",
+};
+const appBasePath = window.location.pathname.replace(/dashboard(?:\/index\.html)?\/?$/, "") || "/";
+const redirectUri = window.location.origin + appBasePath;
 let auth0Client = null;
 let currentUser = null;
+
+window.floAuthzConfig = AUTHZ_API_CONFIG;
+window.floGetAuthorizationToken = async () => {
+  if (!auth0Client) throw new Error("Sign-in is still loading.");
+  try {
+    return await auth0Client.getTokenSilently({
+      authorizationParams: { audience: AUTHZ_API_CONFIG.audience },
+    });
+  } catch (error) {
+    const needsConsent = error?.error === "consent_required" || /consent required/i.test(error?.message || "");
+    if (needsConsent) {
+      const returnTo = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+      await auth0Client.loginWithRedirect({
+        authorizationParams: {
+          audience: AUTHZ_API_CONFIG.audience,
+          prompt: "consent",
+          redirect_uri: redirectUri,
+        },
+        appState: { returnTo },
+      });
+    }
+    throw error;
+  }
+};
 
 function showAuthError(message) {
   authError.textContent = message;
@@ -80,6 +110,8 @@ function getProviderName(user) {
 function updateUI() {
   window.floAuthUser = currentUser;
   window.dispatchEvent(new CustomEvent("flo-auth-change", { detail: { user: currentUser } }));
+  const dashboardGuest = document.getElementById("dashboard-guest");
+  if (dashboardGuest) dashboardGuest.classList.toggle("hidden", Boolean(currentUser));
   if (currentUser) {
     authToggleBtn.classList.add("hidden");
     profileToggleBtn.classList.remove("hidden");
@@ -139,6 +171,9 @@ async function initAuth0() {
     auth0Client = await window.auth0.createAuth0Client({
       domain: AUTH0_CONFIG.domain,
       clientId: AUTH0_CONFIG.clientId,
+      cacheLocation: "localstorage",
+      useRefreshTokens: true,
+      useRefreshTokensFallback: true,
       authorizationParams: {
         redirect_uri: redirectUri,
         scope: "openid profile email",
@@ -156,8 +191,12 @@ async function initAuth0() {
       showAuthError(message);
     } else if (callbackUrl.searchParams.has("code") && callbackUrl.searchParams.has("state")) {
       try {
-        await auth0Client.handleRedirectCallback();
+        const { appState } = await auth0Client.handleRedirectCallback();
         cleanCallbackUrl();
+        if (appState?.returnTo && appState.returnTo !== window.location.pathname) {
+          window.location.replace(appState.returnTo);
+          return;
+        }
       } catch (error) {
         cleanCallbackUrl();
         console.error("Sign-in callback failed:", error);
@@ -191,6 +230,7 @@ async function loginWithConnection(connection) {
       connection,
       redirect_uri: redirectUri,
     },
+    appState: { returnTo: window.location.pathname },
   });
 }
 
@@ -269,14 +309,7 @@ function openMyUploads() {
 }
 
 document.getElementById("profile-details-btn").addEventListener("click", openAccountDetails);
-document.getElementById("profile-dashboard-btn").addEventListener("click", () => {
-  profileMenu.classList.add("hidden");
-  document.getElementById("dashboard").scrollIntoView({ behavior: "smooth" });
-});
-document.getElementById("profile-settings-btn").addEventListener("click", () => {
-  profileMenu.classList.add("hidden");
-  document.getElementById("settings").scrollIntoView({ behavior: "smooth" });
-});
+document.getElementById("dashboard-account-btn")?.addEventListener("click", openAccountDetails);
 document.getElementById("close-account-modal").addEventListener("click", () => {
   accountModal.classList.add("hidden");
   profileToggleBtn.focus();
@@ -287,7 +320,7 @@ accountModal.addEventListener("click", (event) => {
     profileToggleBtn.focus();
   }
 });
-document.getElementById("profile-uploads-btn").addEventListener("click", openMyUploads);
+document.getElementById("profile-uploads-btn")?.addEventListener("click", openMyUploads);
 document.getElementById("account-uploads-btn").addEventListener("click", openMyUploads);
 document.getElementById("copy-account-email-btn").addEventListener("click", async () => {
   if (!currentUser?.email) {

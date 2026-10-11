@@ -6,7 +6,15 @@ const uploadMessage = document.getElementById("upload-message");
 const uploadQueue = document.getElementById("upload-queue");
 const tabs = [...document.querySelectorAll(".tab")];
 const FILEBIN_ORIGIN = "https://filebin.net";
-const DEFAULT_SETTINGS = { defaultView: "repo", sort: "date-desc", showSize: true, concurrency: 3 };
+const APP_ROOT = new URL(document.body.classList.contains("dashboard-page") ? "../" : "./", window.location.href);
+const DEFAULT_SETTINGS = {
+  defaultView: "repo",
+  sort: "date-desc",
+  showSize: true,
+  concurrency: 3,
+  gradientStart: "#17b77d",
+  gradientEnd: "#42d0a2",
+};
 
 const state = {
   repoFiles: [],
@@ -52,6 +60,32 @@ function saveSettings() {
   localStorage.setItem(settingsKey(), JSON.stringify(state.settings));
 }
 
+function normalizeHexColor(value, fallback) {
+  return typeof value === "string" && /^#[0-9a-f]{6}$/i.test(value) ? value : fallback;
+}
+
+function colorChannels(hex) {
+  return [1, 3, 5].map((index) => Number.parseInt(hex.slice(index, index + 2), 16));
+}
+
+function blendColor(color, base, colorWeight) {
+  const colorRgb = colorChannels(color);
+  const baseRgb = colorChannels(base);
+  return `rgb(${colorRgb.map((channel, index) => Math.round(channel * colorWeight + baseRgb[index] * (1 - colorWeight))).join(" ")})`;
+}
+
+function applyGradientSettings() {
+  const start = state.settings.gradientStart;
+  const end = state.settings.gradientEnd;
+  const root = document.documentElement;
+  root.style.setProperty("--gradient-glow-start", `rgba(${colorChannels(start).join(", ")}, 0.2)`);
+  root.style.setProperty("--gradient-glow-end", `rgba(${colorChannels(end).join(", ")}, 0.14)`);
+  root.style.setProperty("--gradient-base-start", blendColor(start, "#041c17", 0.42));
+  root.style.setProperty("--gradient-base-end", blendColor(end, "#031611", 0.28));
+  const preview = document.getElementById("setting-gradient-preview");
+  if (preview) preview.style.background = `linear-gradient(120deg, ${start}, ${end})`;
+}
+
 function loadSettings() {
   try {
     const saved = JSON.parse(localStorage.getItem(settingsKey()) || "{}");
@@ -62,17 +96,29 @@ function loadSettings() {
   if (!["repo", "uploaded"].includes(state.settings.defaultView)) state.settings.defaultView = DEFAULT_SETTINGS.defaultView;
   if (!["date-desc", "date-asc", "name-asc", "name-desc", "size-desc", "size-asc"].includes(state.settings.sort)) state.settings.sort = DEFAULT_SETTINGS.sort;
   state.settings.showSize = state.settings.showSize !== false;
+  state.settings.gradientStart = normalizeHexColor(state.settings.gradientStart, DEFAULT_SETTINGS.gradientStart);
+  state.settings.gradientEnd = normalizeHexColor(state.settings.gradientEnd, DEFAULT_SETTINGS.gradientEnd);
   if (![1, 2, 3].includes(Number(state.settings.concurrency))) state.settings.concurrency = DEFAULT_SETTINGS.concurrency;
   else state.settings.concurrency = Number(state.settings.concurrency);
-  document.getElementById("setting-default-view").value = state.settings.defaultView;
-  document.getElementById("setting-sort").value = state.settings.sort;
-  document.getElementById("setting-concurrency").value = String(state.settings.concurrency);
-  document.getElementById("setting-show-size").checked = state.settings.showSize;
-  document.getElementById("upload-sort").value = state.settings.sort;
+  const defaultView = document.getElementById("setting-default-view");
+  const settingSort = document.getElementById("setting-sort");
+  const concurrency = document.getElementById("setting-concurrency");
+  const showSize = document.getElementById("setting-show-size");
+  const gradientStart = document.getElementById("setting-gradient-start");
+  const gradientEnd = document.getElementById("setting-gradient-end");
+  const uploadSort = document.getElementById("upload-sort");
+  if (defaultView) defaultView.value = state.settings.defaultView;
+  if (settingSort) settingSort.value = state.settings.sort;
+  if (concurrency) concurrency.value = String(state.settings.concurrency);
+  if (showSize) showSize.checked = state.settings.showSize;
+  if (gradientStart) gradientStart.value = state.settings.gradientStart;
+  if (gradientEnd) gradientEnd.value = state.settings.gradientEnd;
+  if (uploadSort) uploadSort.value = state.settings.sort;
+  applyGradientSettings();
 }
 
 function makeBrandedShareUrl(file, downloadUrl) {
-  const shareUrl = new URL("./share.html", window.location.href);
+  const shareUrl = new URL("share.html", APP_ROOT);
   shareUrl.searchParams.set("url", downloadUrl);
   shareUrl.searchParams.set("name", file.name);
   shareUrl.searchParams.set("size", String(file.size));
@@ -206,10 +252,10 @@ function renderRepoFiles(files) {
 }
 
 function filteredUploads() {
-  const query = document.getElementById("upload-search").value.trim().toLocaleLowerCase();
-  const selectedTag = document.getElementById("upload-tag-filter").value;
-  const favoritesOnly = document.getElementById("favorites-only").checked;
-  const sort = document.getElementById("upload-sort").value;
+  const query = document.getElementById("upload-search")?.value.trim().toLocaleLowerCase() || "";
+  const selectedTag = document.getElementById("upload-tag-filter")?.value || "";
+  const favoritesOnly = document.getElementById("favorites-only")?.checked || false;
+  const sort = document.getElementById("upload-sort")?.value || state.settings.sort;
   const results = state.uploads.filter((item) => {
     const name = String(item.name || item.originalName || "").toLocaleLowerCase();
     const tags = Array.isArray(item.tags) ? item.tags : [];
@@ -228,6 +274,7 @@ function filteredUploads() {
 
 function refreshTagFilter() {
   const select = document.getElementById("upload-tag-filter");
+  if (!select) return;
   const selected = select.value;
   const tags = [...new Set(state.uploads.flatMap((item) => Array.isArray(item.tags) ? item.tags : []))].sort((a, b) => a.localeCompare(b));
   select.replaceChildren(new Option("All tags", ""));
@@ -274,14 +321,28 @@ function updateProfileSummary() {
 function renderDashboard() {
   const dashboard = document.getElementById("dashboard");
   const settingsSection = document.getElementById("settings");
+  if (!dashboard) return;
   dashboard.classList.toggle("hidden", !state.user);
-  settingsSection.classList.toggle("hidden", !state.user);
-  document.getElementById("upload-tools").classList.toggle("hidden", !state.user);
+  settingsSection?.classList.toggle("hidden", !state.user);
+  document.getElementById("upload-tools")?.classList.toggle("hidden", !state.user);
   if (!state.user) return;
 
   const user = state.user;
   document.getElementById("dashboard-name").textContent = user.name || user.nickname || "User";
   document.getElementById("dashboard-email").textContent = user.email || "No email provided";
+  const provider = user.sub?.split("|", 1)[0];
+  document.getElementById("dashboard-provider").textContent = provider === "google-oauth2"
+    ? "Google"
+    : provider === "github"
+      ? "GitHub"
+      : provider
+        ? "Auth0"
+        : "Signed in";
+  document.getElementById("dashboard-email-status").textContent = user.email
+    ? user.email_verified
+      ? "Verified"
+      : "Not verified"
+    : "Not provided";
   const avatar = document.getElementById("dashboard-avatar");
   avatar.src = user.picture || "";
   avatar.alt = user.name ? `${user.name}'s profile` : "Profile";
@@ -293,6 +354,13 @@ function renderDashboard() {
   const recent = [...state.uploads].sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)).slice(0, 5);
   renderDashboardList("dashboard-recent", recent, "No uploads yet.");
   renderDashboardList("dashboard-favorite-list", favorites.slice(0, 5), "No favorites yet.");
+  const requestedSection = window.location.hash.slice(1);
+  const destination = ["settings", "files"].includes(requestedSection)
+    ? document.getElementById(requestedSection)
+    : dashboard;
+  if (requestedSection === "dashboard" || document.body.classList.contains("dashboard-page")) {
+    window.setTimeout(() => destination?.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
+  }
 }
 
 function renderDashboardList(id, files, emptyText) {
@@ -322,7 +390,7 @@ function renderDashboardList(id, files, emptyText) {
 
 async function loadRepoFiles() {
   try {
-    const response = await fetch("./repo-files/index.json");
+    const response = await fetch(new URL("repo-files/index.json", APP_ROOT));
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = await response.json();
     state.repoFiles = Array.isArray(data) ? data : [];
@@ -448,11 +516,11 @@ uploadForm.addEventListener("submit", async (event) => {
 });
 
 tabs.forEach((tab) => tab.addEventListener("click", () => setActiveTab(tab.dataset.tab)));
-document.getElementById("upload-search").addEventListener("input", renderUploads);
-document.getElementById("upload-sort").addEventListener("change", renderUploads);
-document.getElementById("upload-tag-filter").addEventListener("change", renderUploads);
-document.getElementById("favorites-only").addEventListener("change", renderUploads);
-document.getElementById("dashboard-history-btn").addEventListener("click", () => {
+document.getElementById("upload-search")?.addEventListener("input", renderUploads);
+document.getElementById("upload-sort")?.addEventListener("change", renderUploads);
+document.getElementById("upload-tag-filter")?.addEventListener("change", renderUploads);
+document.getElementById("favorites-only")?.addEventListener("change", renderUploads);
+document.getElementById("dashboard-history-btn")?.addEventListener("click", () => {
   setActiveTab("uploaded");
   document.getElementById("files").scrollIntoView({ behavior: "smooth" });
 });
@@ -485,32 +553,49 @@ function exportUploads(format) {
   URL.revokeObjectURL(url);
 }
 
-document.getElementById("export-json").addEventListener("click", () => exportUploads("json"));
-document.getElementById("export-csv").addEventListener("click", () => exportUploads("csv"));
+document.getElementById("export-json")?.addEventListener("click", () => exportUploads("json"));
+document.getElementById("export-csv")?.addEventListener("click", () => exportUploads("csv"));
 
 function handleSettingsChange() {
   state.settings.defaultView = document.getElementById("setting-default-view").value;
   state.settings.sort = document.getElementById("setting-sort").value;
   state.settings.concurrency = Number(document.getElementById("setting-concurrency").value);
   state.settings.showSize = document.getElementById("setting-show-size").checked;
-  document.getElementById("upload-sort").value = state.settings.sort;
+  state.settings.gradientStart = normalizeHexColor(
+    document.getElementById("setting-gradient-start")?.value,
+    DEFAULT_SETTINGS.gradientStart,
+  );
+  state.settings.gradientEnd = normalizeHexColor(
+    document.getElementById("setting-gradient-end")?.value,
+    DEFAULT_SETTINGS.gradientEnd,
+  );
+  applyGradientSettings();
+  const uploadSort = document.getElementById("upload-sort");
+  if (uploadSort) uploadSort.value = state.settings.sort;
   try {
     saveSettings();
-    document.getElementById("settings-feedback").textContent = "Settings saved in this browser.";
+    document.getElementById("settings-feedback").textContent = "Settings saved for this account in this browser.";
   } catch (error) {
     document.getElementById("settings-feedback").textContent = "Could not save settings in this browser.";
   }
   renderUploads();
 }
 
-["setting-default-view", "setting-sort", "setting-concurrency", "setting-show-size"].forEach((id) => {
-  document.getElementById(id).addEventListener("change", handleSettingsChange);
+[
+  "setting-default-view",
+  "setting-sort",
+  "setting-concurrency",
+  "setting-show-size",
+  "setting-gradient-start",
+  "setting-gradient-end",
+].forEach((id) => {
+  document.getElementById(id)?.addEventListener("change", handleSettingsChange);
 });
-document.getElementById("reset-settings").addEventListener("click", () => {
+document.getElementById("reset-settings")?.addEventListener("click", () => {
   state.settings = { ...DEFAULT_SETTINGS };
   try { localStorage.removeItem(settingsKey()); } catch (error) { /* UI still resets to defaults. */ }
   loadSettings();
-  setActiveTab(state.settings.defaultView);
+  setActiveTab(document.body.classList.contains("dashboard-page") ? "uploaded" : state.settings.defaultView);
   document.getElementById("settings-feedback").textContent = "Settings reset to defaults.";
   renderUploads();
 });
@@ -542,15 +627,32 @@ function switchUser(user) {
   }
   state.uploads = readArray(currentUploadsKey());
   loadSettings();
-  document.getElementById("upload-search").value = "";
-  document.getElementById("favorites-only").checked = false;
+  const uploadSearch = document.getElementById("upload-search");
+  const favoritesOnly = document.getElementById("favorites-only");
+  if (uploadSearch) uploadSearch.value = "";
+  if (favoritesOnly) favoritesOnly.checked = false;
   renderUploads();
   updateProfileSummary();
-  setActiveTab(state.settings.defaultView);
+  setActiveTab(document.body.classList.contains("dashboard-page") ? "uploaded" : state.settings.defaultView);
   if (state.user && previousOwner !== state.owner) {
-    window.setTimeout(() => document.getElementById("dashboard").scrollIntoView({ behavior: "smooth" }), 0);
+    const dashboard = document.getElementById("dashboard");
+    if (dashboard) window.setTimeout(() => dashboard.scrollIntoView({ behavior: "smooth" }), 0);
   }
 }
+
+["setting-gradient-start", "setting-gradient-end"].forEach((id) => {
+  document.getElementById(id)?.addEventListener("input", () => {
+    state.settings.gradientStart = normalizeHexColor(
+      document.getElementById("setting-gradient-start")?.value,
+      DEFAULT_SETTINGS.gradientStart,
+    );
+    state.settings.gradientEnd = normalizeHexColor(
+      document.getElementById("setting-gradient-end")?.value,
+      DEFAULT_SETTINGS.gradientEnd,
+    );
+    applyGradientSettings();
+  });
+});
 
 document.addEventListener("storage", (event) => {
   if (event.key === currentUploadsKey()) {
@@ -566,4 +668,4 @@ state.uploads = readArray(currentUploadsKey());
 loadRepoFiles();
 renderUploads();
 updateProfileSummary();
-setActiveTab(state.settings.defaultView);
+setActiveTab(document.body.classList.contains("dashboard-page") ? "uploaded" : state.settings.defaultView);

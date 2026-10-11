@@ -12,8 +12,10 @@ repository.
 ### Auth0 dashboard
 
 The application should be a **Single Page Application** with **Token Endpoint
-Authentication Method** set to **None**. In its settings, use the actual Pages
-URL (this repository is a project site under `/file-transfer-by-maxi/`):
+Authentication Method** set to **None**. Enable the **Refresh Token** grant and
+**Refresh Token Rotation** so the SDK can renew the sign-in across page reloads.
+In its settings, use the actual Pages URL (this repository is a project site
+under `/file-transfer-by-maxi/`):
 
 - **Allowed Callback URLs:** `https://maxipaul0910-blip.github.io/file-transfer-by-maxi/`
 - **Allowed Logout URLs:** `https://maxipaul0910-blip.github.io/file-transfer-by-maxi/`
@@ -40,6 +42,24 @@ Do not open `index.html` directly with a `file://` URL. Auth0 redirects back to
 the URL of the page that started sign-in, so local testing needs the localhost
 URLs above registered.
 
+The Auth0 SDK stores its token cache in this browser's local storage to keep the
+session across reloads and the `/dashboard/` route. Sign out on shared devices;
+tokens in local storage are available to JavaScript running on this site.
+
+## Roles and beta access
+
+The static site includes an admin panel backed by a Cloudflare Worker and D1
+database; setup details are in [`worker/README.md`](worker/README.md). The
+Worker and database are deployed, but role management remains unavailable
+until the Auth0 API is configured in the same tenant used by the app. The
+verified `maxi.paul0910@gmail.com` account is the initial administrator.
+Admins can create roles and assign the built-in permissions to registered
+users; the `Beta tester` role unlocks the Labs preview card.
+
+The role API stores user identity and role data in D1. It does not support
+arbitrary homepage HTML or JavaScript edits. To expose a new preview capability,
+add a named permission and explicitly gate that feature in application code.
+
 ## Uploads and share links
 
 The upload form sends files to [Filebin](https://filebin.net/) and creates a
@@ -61,9 +81,11 @@ create a shareable link.
 
 ## Personal dashboard and upload history
 
-After sign-in, the personal dashboard shows the Auth0 profile, the locally
-recorded upload count and total file sizes, recent uploads, and favorites. The
-public repo-file browser and upload form remain available without signing in.
+After sign-in, open **Personal dashboard** from the profile menu or visit
+`/dashboard/` on the same site. The dashboard shows the Auth0 profile, account
+details, upload counts and sizes, recent uploads, favorites, upload history
+tools, and personal settings. The homepage stays focused on browsing and
+uploading files.
 Multiple files can be selected or dropped together; the per-user setting can
 run one, two, or three Filebin requests at once, and one failed file does not
 stop the others. The page shows each file's waiting, uploading, success, or

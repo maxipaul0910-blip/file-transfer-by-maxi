@@ -1,0 +1,22 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "flofiletransfer-roles",
+  "main": "src/index.js",
+  "account_id": "d9157d5769901b6cd583dbf0be138db9",
+  "compatibility_date": "2026-10-11",
+  "preview_urls": false,
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "flofiletransfer-roles",
+      "database_id": "aaa511b4-4c38-45f8-bd2f-f9ea8bf0f400"
+    }
+  ],
+  "vars": {
+    "AUTH0_DOMAIN": "dev-1f0dklchqlhbqxcy.us.auth0.com",
+    "AUTH0_CLIENT_ID": "aoPKSPkKMnUqVXAcbkQE6l3YcKGJuePi",
+    "AUTH0_AUDIENCE": "https://flofiletransfer-roles.maxi-paul0910-d91.workers.dev",
+    "CLAIM_NAMESPACE": "https://flofiletransfer.app",
+    "ALLOWED_ORIGINS": "https://maxipaul0910-blip.github.io,http://127.0.0.1:8765,http://localhost:8765,http://localhost:8000"
+  }
+}

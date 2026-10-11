@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Personal dashboard · FloFileTransfer</title>
+    <meta name="description" content="Modern file transfer and sharing app" />
+    <link rel="icon" type="image/svg+xml" href="../flofiletransfer-icon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="../styles.css" />
+  </head>
+  <body class="dashboard-page">
+    <div class="bg-orb orb-1"></div>
+    <div class="bg-orb orb-2"></div>
+
+    <!-- Auth Modal -->
+    <div id="auth-modal" class="modal hidden">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Sign in to FloFileTransfer</h2>
+          <button class="modal-close" id="close-auth-modal">&times;</button>
+        </div>
+        <div class="auth-methods">
+          <button id="google-login" class="auth-btn google-btn">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+            </svg>
+            Continue with Google
+          </button>
+          <button id="github-login" class="auth-btn github-btn">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v 3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+            </svg>
+            Continue with GitHub
+          </button>
+        </div>
+        <p id="auth-error" class="auth-error hidden" role="alert"></p>
+        <p class="auth-note">We never store your passwords. Login with your existing accounts.</p>
+      </div>
+    </div>
+
+    <!-- Profile Dropdown -->
+    <div id="profile-menu" class="profile-menu hidden">
+      <div class="profile-header">
+        <img id="profile-avatar" src="" alt="Profile" class="profile-avatar">
+        <div class="profile-info">
+          <div id="profile-name" class="profile-name"></div>
+          <div id="profile-email" class="profile-email"></div>
+        </div>
+      </div>
+      <div class="profile-divider"></div>
+      <div class="profile-summary">
+        <span>Your uploads</span>
+        <strong id="profile-upload-count">0 files · 0 B</strong>
+      </div>
+      <button type="button" class="profile-link" id="profile-details-btn">Account details</button>
+      <a class="profile-link hidden" id="admin-menu-link" href="#admin">Admin panel</a>
+      <a class="profile-link" href="#dashboard">Personal dashboard</a>
+      <a class="profile-link" href="#settings">Personal settings</a>
+      <button type="button" class="profile-link" id="profile-uploads-btn">View my uploads</button>
+      <button id="logout-btn" class="profile-link danger">Sign out</button>
+    </div>
+
+    <div id="account-modal" class="modal hidden">
+      <section class="modal-content account-card" role="dialog" aria-modal="true" aria-labelledby="account-title">
+        <div class="modal-header">
+          <div>
+            <span class="eyebrow">Your account</span>
+            <h2 id="account-title">Account details</h2>
+          </div>
+          <button type="button" class="modal-close" id="close-account-modal" aria-label="Close account details">&times;</button>
+        </div>
+        <div class="account-identity">
+          <img id="account-avatar" class="account-avatar" src="" alt="" />
+          <div>
+            <strong id="account-name"></strong>
+            <span id="account-provider" class="account-provider"></span>
+          </div>
+        </div>
+        <dl class="account-details">
+          <div>
+            <dt>Email</dt>
+            <dd id="account-email"></dd>
+          </div>
+          <div>
+            <dt>Email status</dt>
+            <dd id="account-email-status"></dd>
+          </div>
+          <div>
+            <dt>Your uploads</dt>
+            <dd id="account-upload-summary"></dd>
+          </div>
+        </dl>
+        <div class="account-actions">
+          <button type="button" class="secondary-btn" id="copy-account-email-btn">Copy email</button>
+          <button type="button" class="primary-btn" id="account-uploads-btn">Manage uploads</button>
+        </div>
+        <p id="account-feedback" class="account-feedback" role="status" aria-live="polite"></p>
+      </section>
+    </div>
+
+    <header class="topbar">
+      <div class="brand">
+        <img class="brand-mark" src="../flofiletransfer-icon.svg" alt="" />
+        <span>FloFileTransfer</span>
+      </div>
+      <nav>
+        <a href="../#features">Features</a>
+        <a href="../#upload">Upload</a>
+        <a href="#files">Files</a>
+      </nav>
+      <div class="topbar-actions">
+        <button id="auth-toggle-btn" class="auth-toggle-btn">Sign in</button>
+        <button id="profile-toggle-btn" class="profile-toggle-btn hidden">
+          <img id="user-avatar" src="" alt="User" class="user-avatar">
+        </button>
+      </div>
+    </header>
+
+    <main class="container">
+      <section id="dashboard-guest" class="dashboard-guest hidden">
+        <div class="section-title"><span>Your workspace</span><h1>Personal dashboard</h1></div>
+        <p>Sign in to see your profile, upload history, favorites, and personal settings.</p>
+        <a class="primary-btn" href="../">Return to FloFileTransfer to sign in</a>
+      </section>
+
+      <section class="hero">
+        <div class="hero-copy">
+          <span class="eyebrow">Fast file sharing</span>
+          <h1>Send files in seconds. Share your links with zero friction.</h1>
+          <p>
+            A cleaner, more premium file-transfer experience. Browse repo files,
+            upload your own files, and create a shareable link for quick download access.
+          </p>
+
+          <div class="cta-row">
+          <a class="primary-btn" href="../#upload">Upload a file</a>
+          <a class="secondary-btn" href="#files">Browse files</a>
+          </div>
+
+          <div class="stats">
+            <div>
+              <strong>Repo</strong>
+              <span>ready files</span>
+            </div>
+            <div>
+              <strong>Local</strong>
+              <span>sharing links</span>
+            </div>
+            <div>
+              <strong>Fast</strong>
+              <span>download flow</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="hero-panel">
+          <div class="panel-card">
+            <div class="card-head">
+              <span class="dot green"></span>
+              <span class="dot yellow"></span>
+              <span class="dot red"></span>
+            </div>
+
+            <div class="file-row">
+              <div class="icon">PDF</div>
+              <div class="text">
+                <h3>project-brief.pdf</h3>
+                <p>2.4 MB • shared</p>
+              </div>
+            </div>
+
+            <div class="mini-progress">
+              <span></span>
+            </div>
+
+            <div class="share-box">
+              <span>Share link</span>
+              <strong>flofiletransfer.github.io/share.html?file=demo-123</strong>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="features" class="features">
+        <div class="section-title">
+          <span>Built for sharing</span>
+          <h2>Everything you need to move files quickly</h2>
+        </div>
+
+        <div class="feature-grid">
+          <article>
+            <div class="feature-icon">⚡</div>
+            <h3>Instant upload</h3>
+            <p>Quick drag-and-drop uploads with a polished interface and single-click sharing.</p>
+          </article>
+
+          <article>
+            <div class="feature-icon">📁</div>
+            <h3>Repo files</h3>
+            <p>Display project files stored in this repository and keep them easy to download.</p>
+          </article>
+
+          <article>
+            <div class="feature-icon">🔗</div>
+            <h3>Shareable links</h3>
+            <p>Upload a file once and share its download link across devices.</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="upload" class="upload-panel">
+        <div class="section-title">
+          <span>Upload</span>
+          <h2>Send a file to anyone</h2>
+        </div>
+
+        <form id="upload-form" class="upload-form">
+          <label class="dropzone" for="file-input">
+            <input id="file-input" type="file" name="file" multiple />
+            <div class="dropzone-inner">
+              <div class="upload-icon">⇪</div>
+              <h3>Drag and drop files here</h3>
+              <p>or click to browse</p>
+            </div>
+          </label>
+
+          <button type="submit" class="primary-btn wide">Upload and create links</button>
+          <p class="upload-disclosure">
+            Files are uploaded to Filebin and shared publicly through a link. Filebin deletes uploads automatically.
+            Do not upload sensitive files.
+          </p>
+        </form>
+
+        <div id="upload-message" class="upload-message"></div>
+        <div id="upload-queue" class="upload-queue" aria-live="polite"></div>
+      </section>
+
+      <section id="files" class="files-section">
+        <div class="section-title">
+          <span>Files</span>
+          <h2>Repo files and your uploads</h2>
+        </div>
+
+        <div class="tab-row">
+          <button class="tab active" data-tab="repo">Repo files</button>
+          <button class="tab" data-tab="uploaded">My uploads</button>
+        </div>
+
+        <div id="upload-tools" class="upload-tools hidden">
+          <label>Search <input id="upload-search" type="search" placeholder="Search filenames" /></label>
+          <label>Sort by
+            <select id="upload-sort">
+              <option value="date-desc">Newest first</option>
+              <option value="date-asc">Oldest first</option>
+              <option value="name-asc">Name A–Z</option>
+              <option value="name-desc">Name Z–A</option>
+              <option value="size-desc">Largest first</option>
+              <option value="size-asc">Smallest first</option>
+            </select>
+          </label>
+          <label>Tag <select id="upload-tag-filter"><option value="">All tags</option></select></label>
+          <label class="check-label"><input id="favorites-only" type="checkbox" /> Favorites</label>
+          <div class="export-actions">
+            <button type="button" class="secondary-btn compact-btn" id="export-json">Export JSON</button>
+            <button type="button" class="secondary-btn compact-btn" id="export-csv">Export CSV</button>
+          </div>
+          <p class="local-storage-note">History, tags, favorites, and notes are stored in this browser for the current account and do not sync across devices. Removing a history entry does not delete the public file from Filebin.</p>
+        </div>
+
+        <div id="repo-list" class="file-list active"></div>
+        <div id="uploaded-list" class="file-list"></div>
+      </section>
+
+      <section id="dashboard" class="dashboard-section hidden" aria-labelledby="dashboard-title">
+        <div class="section-title">
+          <span>Your workspace</span>
+          <h2 id="dashboard-title">Personal dashboard</h2>
+        </div>
+        <div class="dashboard-identity">
+          <img id="dashboard-avatar" class="dashboard-avatar" alt="" />
+          <div><strong id="dashboard-name"></strong><span id="dashboard-email"></span></div>
+        </div>
+        <dl class="dashboard-account-details">
+          <div><dt>Sign-in provider</dt><dd id="dashboard-provider">—</dd></div>
+          <div><dt>Email status</dt><dd id="dashboard-email-status">—</dd></div>
+          <div><dt>Upload history</dt><dd>Saved in this browser for this account</dd></div>
+        </dl>
+        <div class="dashboard-stats">
+          <article><span>Uploads</span><strong id="dashboard-count">0</strong></article>
+          <article><span>Total file size (from metadata)</span><strong id="dashboard-size">0 B</strong></article>
+          <article><span>Favorites</span><strong id="dashboard-favorites">0</strong></article>
+        </div>
+        <div class="dashboard-columns">
+          <article class="dashboard-card"><h3>Recent uploads</h3><div id="dashboard-recent"></div></article>
+          <article class="dashboard-card"><h3>Favorite files</h3><div id="dashboard-favorite-list"></div></article>
+        </div>
+        <div class="dashboard-shortcuts">
+          <button type="button" class="secondary-btn" id="dashboard-account-btn">Account details</button>
+          <a class="primary-btn" href="../#upload">Upload files</a>
+          <button type="button" class="secondary-btn" id="dashboard-history-btn">Manage upload history</button>
+          <a class="secondary-btn" href="#settings">Personal settings</a>
+          <a class="secondary-btn hidden" id="dashboard-admin-link" href="#admin">Admin panel</a>
+        </div>
+      </section>
+
+      <section id="beta-preview-card" class="dashboard-card beta-preview-card hidden" aria-labelledby="beta-preview-title">
+        <span class="eyebrow">Early access</span>
+        <h2 id="beta-preview-title">FloFileTransfer Labs</h2>
+        <p>Your account has beta access. New preview features that use this permission will appear here.</p>
+      </section>
+
+      <section id="settings" class="settings-section hidden" aria-labelledby="settings-title">
+        <div class="section-title"><span>Personal settings</span><h2 id="settings-title">Your preferences</h2></div>
+        <div class="settings-card">
+          <div class="design-setting">
+            <div>
+              <strong>Background gradient</strong>
+              <p class="settings-note">Choose two colors and preview the change as you pick them.</p>
+            </div>
+            <div class="gradient-preview" id="setting-gradient-preview" role="img" aria-label="Preview of your background gradient"></div>
+            <div class="gradient-color-controls">
+              <label class="color-setting" for="setting-gradient-start">
+                <span>First color</span>
+                <input id="setting-gradient-start" type="color" value="#17b77d" />
+              </label>
+              <label class="color-setting" for="setting-gradient-end">
+                <span>Second color</span>
+                <input id="setting-gradient-end" type="color" value="#42d0a2" />
+              </label>
+            </div>
+            <p class="settings-note">Saved for this signed-in account in this browser. It won’t sync to other devices yet.</p>
+          </div>
+          <label>Default upload history view
+            <select id="setting-default-view"><option value="repo">Repo files</option><option value="uploaded">My uploads</option></select>
+          </label>
+          <label>Default sorting
+            <select id="setting-sort"><option value="date-desc">Newest first</option><option value="date-asc">Oldest first</option><option value="name-asc">Name A–Z</option><option value="name-desc">Name Z–A</option><option value="size-desc">Largest first</option><option value="size-asc">Smallest first</option></select>
+          </label>
+          <label>Simultaneous uploads
+            <select id="setting-concurrency"><option value="1">One at a time</option><option value="2">Two at a time</option><option value="3">Three at a time</option></select>
+          </label>
+          <label class="check-label"><input id="setting-show-size" type="checkbox" /> Show file sizes in upload history</label>
+          <p class="settings-note">Upload size limits are enforced by Filebin. Upload progress is shown as an in-progress state because the Filebin upload request does not expose byte-level progress through this page’s API.</p>
+          <button type="button" class="secondary-btn" id="reset-settings">Reset personal settings</button>
+          <p id="settings-feedback" class="account-feedback" role="status" aria-live="polite"></p>
+        </div>
+      </section>
+
+      <section id="admin" class="settings-section admin-section hidden" aria-labelledby="admin-title">
+        <div class="section-title"><span>Workspace administration</span><h2 id="admin-title">Roles and permissions</h2></div>
+        <div class="admin-notice" id="admin-status" role="status" aria-live="polite"></div>
+        <div class="admin-grid">
+          <article class="settings-card admin-card">
+            <h3>Create a role</h3>
+            <p class="settings-note">Choose the specific app permissions this role should receive.</p>
+            <form id="admin-role-form">
+              <label>Role name <input id="admin-role-name" name="name" maxlength="40" required minlength="2" placeholder="e.g. Design preview" /></label>
+              <label>Description <input id="admin-role-description" name="description" maxlength="240" placeholder="What can this role access?" /></label>
+              <fieldset class="permission-picker">
+                <legend>Permissions</legend>
+                <div id="admin-permission-options" class="permission-options"></div>
+              </fieldset>
+              <button type="submit" class="primary-btn" id="admin-create-role">Create role</button>
+            </form>
+          </article>
+          <article class="settings-card admin-card">
+            <h3>Available roles</h3>
+            <div id="admin-role-list" class="admin-role-list"></div>
+          </article>
+        </div>
+        <article class="settings-card admin-card admin-users-card">
+          <div><h3>Registered users</h3><p class="settings-note">Users appear here after signing in while the roles service is connected.</p></div>
+          <div id="admin-user-list" class="admin-user-list"></div>
+        </article>
+      </section>
+    </main>
+
+    <script src="https://cdn.auth0.com/js/auth0-spa-js/2.18/auth0-spa-js.production.js"></script>
+    <script src="../auth.js?v=worker-audience-consent"></script>
+    <script src="../role-admin.js"></script>
+    <script src="../app.js"></script>
+  </body>
+</html>

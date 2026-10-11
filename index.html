@@ -11,7 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="./styles.css" />
   </head>
-  <body>
+  <body class="home-page">
     <div class="bg-orb orb-1"></div>
     <div class="bg-orb orb-2"></div>
 
@@ -59,9 +59,10 @@
         <strong id="profile-upload-count">0 files · 0 B</strong>
       </div>
       <button type="button" class="profile-link" id="profile-details-btn">Account details</button>
-      <button type="button" class="profile-link" id="profile-dashboard-btn">Personal dashboard</button>
-      <button type="button" class="profile-link" id="profile-settings-btn">Personal settings</button>
-      <button type="button" class="profile-link" id="profile-uploads-btn">View my uploads</button>
+      <a class="profile-link hidden" id="admin-menu-link" href="./dashboard/#admin">Admin panel</a>
+      <a class="profile-link" href="./dashboard/#dashboard">Personal dashboard</a>
+      <a class="profile-link" href="./dashboard/#settings">Personal settings</a>
+      <a class="profile-link" href="./dashboard/#files">View my uploads</a>
       <button id="logout-btn" class="profile-link danger">Sign out</button>
     </div>
 
@@ -245,78 +246,14 @@
           <button class="tab" data-tab="uploaded">My uploads</button>
         </div>
 
-        <div id="upload-tools" class="upload-tools hidden">
-          <label>Search <input id="upload-search" type="search" placeholder="Search filenames" /></label>
-          <label>Sort by
-            <select id="upload-sort">
-              <option value="date-desc">Newest first</option>
-              <option value="date-asc">Oldest first</option>
-              <option value="name-asc">Name A–Z</option>
-              <option value="name-desc">Name Z–A</option>
-              <option value="size-desc">Largest first</option>
-              <option value="size-asc">Smallest first</option>
-            </select>
-          </label>
-          <label>Tag <select id="upload-tag-filter"><option value="">All tags</option></select></label>
-          <label class="check-label"><input id="favorites-only" type="checkbox" /> Favorites</label>
-          <div class="export-actions">
-            <button type="button" class="secondary-btn compact-btn" id="export-json">Export JSON</button>
-            <button type="button" class="secondary-btn compact-btn" id="export-csv">Export CSV</button>
-          </div>
-          <p class="local-storage-note">History, tags, favorites, and notes are stored in this browser for the current account and do not sync across devices. Removing a history entry does not delete the public file from Filebin.</p>
-        </div>
-
         <div id="repo-list" class="file-list active"></div>
         <div id="uploaded-list" class="file-list"></div>
-      </section>
-
-      <section id="dashboard" class="dashboard-section hidden" aria-labelledby="dashboard-title">
-        <div class="section-title">
-          <span>Your workspace</span>
-          <h2 id="dashboard-title">Personal dashboard</h2>
-        </div>
-        <div class="dashboard-identity">
-          <img id="dashboard-avatar" class="dashboard-avatar" alt="" />
-          <div><strong id="dashboard-name"></strong><span id="dashboard-email"></span></div>
-        </div>
-        <div class="dashboard-stats">
-          <article><span>Uploads</span><strong id="dashboard-count">0</strong></article>
-          <article><span>Total file size (from metadata)</span><strong id="dashboard-size">0 B</strong></article>
-          <article><span>Favorites</span><strong id="dashboard-favorites">0</strong></article>
-        </div>
-        <div class="dashboard-columns">
-          <article class="dashboard-card"><h3>Recent uploads</h3><div id="dashboard-recent"></div></article>
-          <article class="dashboard-card"><h3>Favorite files</h3><div id="dashboard-favorite-list"></div></article>
-        </div>
-        <div class="dashboard-shortcuts">
-          <a class="primary-btn" href="#upload">Upload files</a>
-          <button type="button" class="secondary-btn" id="dashboard-history-btn">Manage upload history</button>
-          <a class="secondary-btn" href="#settings">Personal settings</a>
-        </div>
-      </section>
-
-      <section id="settings" class="settings-section hidden" aria-labelledby="settings-title">
-        <div class="section-title"><span>Personal settings</span><h2 id="settings-title">Your preferences</h2></div>
-        <div class="settings-card">
-          <label>Default upload history view
-            <select id="setting-default-view"><option value="repo">Repo files</option><option value="uploaded">My uploads</option></select>
-          </label>
-          <label>Default sorting
-            <select id="setting-sort"><option value="date-desc">Newest first</option><option value="date-asc">Oldest first</option><option value="name-asc">Name A–Z</option><option value="name-desc">Name Z–A</option><option value="size-desc">Largest first</option><option value="size-asc">Smallest first</option></select>
-          </label>
-          <label>Simultaneous uploads
-            <select id="setting-concurrency"><option value="1">One at a time</option><option value="2">Two at a time</option><option value="3">Three at a time</option></select>
-          </label>
-          <label class="check-label"><input id="setting-show-size" type="checkbox" /> Show file sizes in upload history</label>
-          <p class="settings-note">Upload size limits are enforced by Filebin. Upload progress is shown as an in-progress state because the Filebin upload request does not expose byte-level progress through this page’s API.</p>
-          <button type="button" class="secondary-btn" id="reset-settings">Reset personal settings</button>
-          <p id="settings-feedback" class="account-feedback" role="status" aria-live="polite"></p>
-        </div>
       </section>
     </main>
 
     <script src="https://cdn.auth0.com/js/auth0-spa-js/2.18/auth0-spa-js.production.js"></script>
-    <script src="./auth.js"></script>
+    <script src="./auth.js?v=worker-audience-consent"></script>
+    <script src="./role-admin.js"></script>
     <script src="./app.js"></script>
   </body>
 </html>
