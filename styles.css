@@ -72,13 +72,10 @@ input {
 .brand-mark {
   width: 28px;
   height: 28px;
-  display: grid;
-  place-items: center;
-  border-radius: 9px;
-  background: linear-gradient(135deg, var(--green-1), var(--green-2));
-  color: #ffffff;
+  display: block;
+  border-radius: 8px;
+  object-fit: cover;
   box-shadow: 0 10px 20px rgba(23, 183, 125, 0.5);
-  font-size: 0.8rem;
 }
 
 nav {
