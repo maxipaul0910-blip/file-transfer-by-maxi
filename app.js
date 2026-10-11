@@ -1,31 +1,117 @@
-const state = {
-  repoFiles: [],
-  uploads: JSON.parse(localStorage.getItem("transferflow_uploads") || "[]"),
-};
-
 const repoList = document.getElementById("repo-list");
 const uploadedList = document.getElementById("uploaded-list");
 const uploadForm = document.getElementById("upload-form");
 const fileInput = document.getElementById("file-input");
 const uploadMessage = document.getElementById("upload-message");
-const tabs = document.querySelectorAll(".tab");
+const uploadQueue = document.getElementById("upload-queue");
+const tabs = [...document.querySelectorAll(".tab")];
 const FILEBIN_ORIGIN = "https://filebin.net";
+const DEFAULT_SETTINGS = { defaultView: "repo", sort: "date-desc", showSize: true, concurrency: 3 };
+
+const state = {
+  repoFiles: [],
+  uploads: [],
+  user: window.floAuthUser || null,
+  owner: "anonymous",
+  settings: { ...DEFAULT_SETTINGS },
+};
 
 function formatSize(size) {
-  if (!size) return "0 B";
+  if (!Number.isFinite(Number(size)) || Number(size) <= 0) return "0 B";
   const units = ["B", "KB", "MB", "GB", "TB"];
-  const index = Math.min(Math.floor(Math.log(size) / Math.log(1024)), units.length - 1);
-  const value = size / 1024 ** index;
+  const index = Math.min(Math.floor(Math.log(Number(size)) / Math.log(1024)), units.length - 1);
+  const value = Number(size) / 1024 ** index;
   return `${value.toFixed(value >= 10 || index === 0 ? 0 : 1)} ${units[index]}`;
+}
+
+function currentUploadsKey() {
+  return state.user?.sub
+    ? `transferflow_uploads:${encodeURIComponent(state.user.sub)}`
+    : "transferflow_uploads";
+}
+
+function settingsKey() {
+  return `transferflow_settings:${state.user?.sub ? encodeURIComponent(state.user.sub) : "anonymous"}`;
+}
+
+function readArray(key) {
+  try {
+    const value = JSON.parse(localStorage.getItem(key) || "[]");
+    return Array.isArray(value) ? value : [];
+  } catch (error) {
+    console.warn(`Could not read ${key}:`, error);
+    return [];
+  }
+}
+
+function saveUploads() {
+  localStorage.setItem(currentUploadsKey(), JSON.stringify(state.uploads));
+}
+
+function saveSettings() {
+  localStorage.setItem(settingsKey(), JSON.stringify(state.settings));
+}
+
+function loadSettings() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(settingsKey()) || "{}");
+    state.settings = { ...DEFAULT_SETTINGS, ...(saved && typeof saved === "object" ? saved : {}) };
+  } catch (error) {
+    state.settings = { ...DEFAULT_SETTINGS };
+  }
+  if (!["repo", "uploaded"].includes(state.settings.defaultView)) state.settings.defaultView = DEFAULT_SETTINGS.defaultView;
+  if (!["date-desc", "date-asc", "name-asc", "name-desc", "size-desc", "size-asc"].includes(state.settings.sort)) state.settings.sort = DEFAULT_SETTINGS.sort;
+  state.settings.showSize = state.settings.showSize !== false;
+  if (![1, 2, 3].includes(Number(state.settings.concurrency))) state.settings.concurrency = DEFAULT_SETTINGS.concurrency;
+  else state.settings.concurrency = Number(state.settings.concurrency);
+  document.getElementById("setting-default-view").value = state.settings.defaultView;
+  document.getElementById("setting-sort").value = state.settings.sort;
+  document.getElementById("setting-concurrency").value = String(state.settings.concurrency);
+  document.getElementById("setting-show-size").checked = state.settings.showSize;
+  document.getElementById("upload-sort").value = state.settings.sort;
+}
+
+function makeBrandedShareUrl(file, downloadUrl) {
+  const shareUrl = new URL("./share.html", window.location.href);
+  shareUrl.searchParams.set("url", downloadUrl);
+  shareUrl.searchParams.set("name", file.name);
+  shareUrl.searchParams.set("size", String(file.size));
+  shareUrl.searchParams.set("type", file.type || "application/octet-stream");
+  return shareUrl.href;
+}
+
+function safeHref(value) {
+  try {
+    const url = new URL(value || "#", window.location.href);
+    return url.origin === window.location.origin || url.protocol === "https:" ? url.href : "#";
+  } catch (error) {
+    return "#";
+  }
+}
+
+function appendActionButton(container, label, onClick, className = "secondary-btn compact-btn") {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = className;
+  button.textContent = label;
+  button.addEventListener("click", onClick);
+  container.appendChild(button);
+  return button;
+}
+
+async function copyText(text, feedback) {
+  try {
+    await navigator.clipboard.writeText(text);
+    feedback.textContent = "Link copied.";
+  } catch (error) {
+    feedback.textContent = "Could not copy the link. Select and copy it manually.";
+  }
 }
 
 function createCard(item, type) {
   const card = document.createElement("article");
   card.className = "file-card";
 
-  const href = type === "upload"
-    ? item.shareUrl || `./share.html?file=${encodeURIComponent(item.id)}`
-    : item.url || item.downloadUrl || item.path || "#";
   const header = document.createElement("div");
   header.className = "file-card-header";
   const badge = document.createElement("span");
@@ -39,10 +125,14 @@ function createCard(item, type) {
 
   const metadata = document.createElement("p");
   metadata.className = "file-meta";
-  metadata.textContent = `${formatSize(item.size)} · ${item.type || "application/octet-stream"}`;
+  const date = item.createdAt ? new Date(item.createdAt).toLocaleString() : "Date unavailable";
+  metadata.textContent = `${state.settings.showSize ? `${formatSize(item.size)} · ` : ""}${item.type || "application/octet-stream"}${type === "upload" ? ` · ${date}` : ""}`;
 
   const actions = document.createElement("div");
   actions.className = "file-actions";
+  const href = safeHref(type === "upload"
+    ? item.shareUrl || item.url || `./share.html?file=${encodeURIComponent(item.id)}`
+    : item.url || item.downloadUrl || item.path || "#");
   const openLink = document.createElement("a");
   openLink.className = "file-link";
   openLink.href = href;
@@ -51,163 +141,429 @@ function createCard(item, type) {
   openLink.textContent = "Open";
   actions.appendChild(openLink);
 
-  if (type === "upload" && item.shareUrl) {
-    const shareLink = document.createElement("a");
-    shareLink.className = "file-link secondary";
-    shareLink.href = item.shareUrl;
-    shareLink.target = "_blank";
-    shareLink.rel = "noopener noreferrer";
-    shareLink.textContent = "Share";
-    actions.appendChild(shareLink);
+  if (type === "upload") {
+    appendActionButton(actions, "Copy link", () => copyText(href, feedback));
+    appendActionButton(actions, item.favorite ? "★ Favorited" : "☆ Favorite", () => {
+      item.favorite = !item.favorite;
+      persistAndRender();
+    }, "secondary-btn compact-btn favorite-button");
   }
 
   card.append(header, name, metadata, actions);
+  if (type === "upload") {
+    const details = document.createElement("div");
+    details.className = "file-personal-details";
+    const tagInput = document.createElement("input");
+    tagInput.type = "text";
+    tagInput.maxLength = 160;
+    tagInput.value = Array.isArray(item.tags) ? item.tags.join(", ") : "";
+    tagInput.placeholder = "Tags, separated by commas";
+    tagInput.setAttribute("aria-label", `Tags for ${item.name}`);
+    tagInput.addEventListener("change", () => {
+      item.tags = [...new Set(tagInput.value.split(",").map((tag) => tag.trim()).filter(Boolean))];
+      persistAndRender();
+    });
+    const note = document.createElement("textarea");
+    note.maxLength = 2000;
+    note.rows = 2;
+    note.value = item.note || "";
+    note.placeholder = "Private note (stored only in this browser)";
+    note.setAttribute("aria-label", `Private note for ${item.name}`);
+    note.addEventListener("change", () => {
+      item.note = note.value;
+      persistAndRender();
+    });
+    details.append(tagInput, note);
+    card.appendChild(details);
 
+    const linkText = document.createElement("p");
+    linkText.className = "share-url-text";
+    linkText.textContent = href;
+    card.appendChild(linkText);
+    const feedback = document.createElement("p");
+    feedback.className = "card-feedback";
+    feedback.setAttribute("role", "status");
+    card.appendChild(feedback);
+    appendActionButton(actions, "Remove from history", () => {
+      if (!window.confirm(`Remove “${item.name || item.originalName || "this file"}” from the local upload history? The Filebin-hosted file and public download link will remain until Filebin expires or removes it. The local entry cannot be restored unless you have an export.`)) return;
+      state.uploads = state.uploads.filter((upload) => upload.id !== item.id);
+      persistAndRender();
+    }, "text-button danger-button");
+  }
   return card;
 }
 
 function renderRepoFiles(files) {
-  repoList.innerHTML = "";
-
+  repoList.replaceChildren();
   if (!files.length) {
-    repoList.innerHTML = '<div class="empty-state">No repo files available yet.</div>';
+    const empty = document.createElement("div");
+    empty.className = "empty-state";
+    empty.textContent = "No repo files available yet.";
+    repoList.appendChild(empty);
     return;
   }
-
   files.forEach((file) => repoList.appendChild(createCard(file, "repo")));
 }
 
-function renderUploads(files) {
-  uploadedList.innerHTML = "";
+function filteredUploads() {
+  const query = document.getElementById("upload-search").value.trim().toLocaleLowerCase();
+  const selectedTag = document.getElementById("upload-tag-filter").value;
+  const favoritesOnly = document.getElementById("favorites-only").checked;
+  const sort = document.getElementById("upload-sort").value;
+  const results = state.uploads.filter((item) => {
+    const name = String(item.name || item.originalName || "").toLocaleLowerCase();
+    const tags = Array.isArray(item.tags) ? item.tags : [];
+    return name.includes(query) && (!favoritesOnly || item.favorite) && (!selectedTag || tags.includes(selectedTag));
+  });
+  const [field, direction] = sort.split("-");
+  results.sort((a, b) => {
+    let comparison = 0;
+    if (field === "date") comparison = new Date(a.createdAt || 0) - new Date(b.createdAt || 0);
+    if (field === "name") comparison = String(a.name || a.originalName || "").localeCompare(String(b.name || b.originalName || ""));
+    if (field === "size") comparison = (Number(a.size) || 0) - (Number(b.size) || 0);
+    return direction === "desc" ? -comparison : comparison;
+  });
+  return results;
+}
 
+function refreshTagFilter() {
+  const select = document.getElementById("upload-tag-filter");
+  const selected = select.value;
+  const tags = [...new Set(state.uploads.flatMap((item) => Array.isArray(item.tags) ? item.tags : []))].sort((a, b) => a.localeCompare(b));
+  select.replaceChildren(new Option("All tags", ""));
+  tags.forEach((tag) => select.add(new Option(tag, tag)));
+  select.value = tags.includes(selected) ? selected : "";
+}
+
+function renderUploads() {
+  refreshTagFilter();
+  uploadedList.replaceChildren();
+  const files = filteredUploads();
   if (!files.length) {
-    uploadedList.innerHTML = '<div class="empty-state">No uploaded files yet. Use the form above to add one.</div>';
+    const empty = document.createElement("div");
+    empty.className = "empty-state";
+    empty.textContent = state.uploads.length
+      ? "No uploads match these filters."
+      : "No uploaded files yet. Use the form above to add one.";
+    uploadedList.appendChild(empty);
+  } else {
+    files.forEach((file) => uploadedList.appendChild(createCard(file, "upload")));
+  }
+  renderDashboard();
+}
+
+function persistAndRender() {
+  try {
+    saveUploads();
+  } catch (error) {
+    uploadMessage.textContent = "Your change is visible, but the browser could not save it.";
+  }
+  renderUploads();
+  updateProfileSummary();
+}
+
+function updateProfileSummary() {
+  const total = state.uploads.reduce((sum, item) => sum + (Number(item.size) > 0 ? Number(item.size) : 0), 0);
+  const summary = `${state.uploads.length} ${state.uploads.length === 1 ? "file" : "files"} · ${formatSize(total)}`;
+  const count = document.getElementById("profile-upload-count");
+  const account = document.getElementById("account-upload-summary");
+  if (count) count.textContent = summary;
+  if (account) account.textContent = summary;
+}
+
+function renderDashboard() {
+  const dashboard = document.getElementById("dashboard");
+  const settingsSection = document.getElementById("settings");
+  dashboard.classList.toggle("hidden", !state.user);
+  settingsSection.classList.toggle("hidden", !state.user);
+  document.getElementById("upload-tools").classList.toggle("hidden", !state.user);
+  if (!state.user) return;
+
+  const user = state.user;
+  document.getElementById("dashboard-name").textContent = user.name || user.nickname || "User";
+  document.getElementById("dashboard-email").textContent = user.email || "No email provided";
+  const avatar = document.getElementById("dashboard-avatar");
+  avatar.src = user.picture || "";
+  avatar.alt = user.name ? `${user.name}'s profile` : "Profile";
+  const total = state.uploads.reduce((sum, item) => sum + (Number(item.size) > 0 ? Number(item.size) : 0), 0);
+  document.getElementById("dashboard-count").textContent = String(state.uploads.length);
+  document.getElementById("dashboard-size").textContent = formatSize(total);
+  const favorites = state.uploads.filter((item) => item.favorite);
+  document.getElementById("dashboard-favorites").textContent = String(favorites.length);
+  const recent = [...state.uploads].sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)).slice(0, 5);
+  renderDashboardList("dashboard-recent", recent, "No uploads yet.");
+  renderDashboardList("dashboard-favorite-list", favorites.slice(0, 5), "No favorites yet.");
+}
+
+function renderDashboardList(id, files, emptyText) {
+  const container = document.getElementById(id);
+  container.replaceChildren();
+  if (!files.length) {
+    const empty = document.createElement("p");
+    empty.className = "empty-state compact-empty";
+    empty.textContent = emptyText;
+    container.appendChild(empty);
     return;
   }
-
-  files.forEach((file) => uploadedList.appendChild(createCard(file, "upload")));
+  files.forEach((file) => {
+    const row = document.createElement("div");
+    row.className = "dashboard-file-row";
+    const name = document.createElement("span");
+    name.textContent = file.name || file.originalName || "Unnamed file";
+    const link = document.createElement("a");
+    link.href = safeHref(file.shareUrl || file.url || "#");
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.textContent = "Open";
+    row.append(name, link);
+    container.appendChild(row);
+  });
 }
 
 async function loadRepoFiles() {
   try {
     const response = await fetch("./repo-files/index.json");
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = await response.json();
     state.repoFiles = Array.isArray(data) ? data : [];
-    renderRepoFiles(state.repoFiles);
   } catch (error) {
     state.repoFiles = [];
-    renderRepoFiles([]);
   }
+  renderRepoFiles(state.repoFiles);
 }
 
-function saveUploads() {
-  localStorage.setItem("transferflow_uploads", JSON.stringify(state.uploads));
+function setActiveTab(target) {
+  tabs.forEach((tab) => tab.classList.toggle("active", tab.dataset.tab === target));
+  repoList.classList.toggle("active", target === "repo");
+  uploadedList.classList.toggle("active", target === "uploaded");
 }
 
-function makeBrandedShareUrl(file, downloadUrl) {
-  const shareUrl = new URL("./share.html", window.location.href);
-  shareUrl.searchParams.set("url", downloadUrl);
-  shareUrl.searchParams.set("name", file.name);
-  shareUrl.searchParams.set("size", String(file.size));
-  shareUrl.searchParams.set("type", file.type || "application/octet-stream");
-  return shareUrl.href;
+function renderQueue(entries) {
+  uploadQueue.replaceChildren();
+  entries.forEach(({ file, status, link }) => {
+    const row = document.createElement("div");
+    row.className = `upload-queue-row status-${status}`;
+    const label = document.createElement("span");
+    label.textContent = `${file.name} · ${formatSize(file.size)}`;
+    const stateLabel = document.createElement("span");
+    stateLabel.textContent = status === "queued" ? "Waiting" : status === "uploading" ? "Uploading…" : status === "success" ? "Uploaded" : entry.errorMessage || "Upload failed";
+    row.append(label, stateLabel);
+    if (link) {
+      const anchor = document.createElement("a");
+      anchor.href = link;
+      anchor.target = "_blank";
+      anchor.rel = "noopener noreferrer";
+      anchor.textContent = "Open link";
+      row.appendChild(anchor);
+    }
+    uploadQueue.appendChild(row);
+  });
 }
 
-function showUploadResult(file, metadataSaved) {
-  uploadMessage.replaceChildren();
-  const message = document.createElement("span");
-  message.textContent = metadataSaved
-    ? "Uploaded to Filebin. Anyone with this link can access the file: "
-    : "Uploaded to Filebin. Save this link; it could not be added to My uploads: ";
-
-  const link = document.createElement("a");
-  link.href = file.shareUrl;
-  link.target = "_blank";
-  link.rel = "noopener noreferrer";
-  link.textContent = file.shareUrl;
-  uploadMessage.append(message, link);
+async function uploadOne(file) {
+  const binId = crypto.randomUUID().replaceAll("-", "");
+  const encodedFileName = encodeURIComponent(file.name);
+  const uploadUrl = `${FILEBIN_ORIGIN}/${binId}/${encodedFileName}`;
+  const response = await fetch(uploadUrl, { method: "POST", body: new Blob([file]) });
+  const responseText = await response.text();
+  let result = null;
+  try { result = JSON.parse(responseText); } catch {
+    if (response.ok) throw new Error("Filebin returned an unreadable upload response.");
+  }
+  if (!response.ok || result?.bin?.id !== binId) {
+    if (response.status === 403) throw new Error("Filebin rejected this file's type or content (HTTP 403).");
+    if (response.status === 507) throw new Error("Filebin's storage capacity is full. Please try again later (HTTP 507).");
+    if (response.status === 411) throw new Error("Filebin could not read the upload size. Try again with a current browser (HTTP 411).");
+    if (response.status === 405) throw new Error("Filebin refused this upload because the bin is locked, expired, or unavailable (HTTP 405).");
+    const reason = responseText.trim().slice(0, 180);
+    throw new Error(`Filebin upload failed (HTTP ${response.status})${reason ? `: ${reason}` : "."}`);
+  }
+  const downloadUrl = new URL(`/${binId}/${encodedFileName}`, FILEBIN_ORIGIN).href;
+  return {
+    id: binId,
+    originalName: file.name,
+    name: file.name,
+    type: file.type || "application/octet-stream",
+    size: file.size,
+    shareUrl: makeBrandedShareUrl(file, downloadUrl),
+    url: downloadUrl,
+    expires: result.bin.expired_at || null,
+    createdAt: new Date().toISOString(),
+    favorite: false,
+    tags: [],
+    note: "",
+  };
 }
 
 uploadForm.addEventListener("submit", async (event) => {
   event.preventDefault();
-
-  const file = fileInput.files[0];
-  if (!file) {
-    uploadMessage.textContent = "Please choose a file first.";
+  const files = [...fileInput.files];
+  if (!files.length) {
+    uploadMessage.textContent = "Please choose one or more files first.";
     return;
   }
-
   const submitButton = uploadForm.querySelector('button[type="submit"]');
   submitButton.disabled = true;
-  uploadMessage.textContent = "Uploading your file to Filebin…";
-  try {
-    const binId = crypto.randomUUID().replaceAll("-", "");
-    const encodedFileName = encodeURIComponent(file.name);
-    const uploadUrl = `${FILEBIN_ORIGIN}/${binId}/${encodedFileName}`;
-
-    const response = await fetch(uploadUrl, {
-      method: "POST",
-      body: new Blob([file]),
-    });
-    const responseText = await response.text();
-    let result = null;
-    try {
-      result = JSON.parse(responseText);
-    } catch {
-      if (response.ok) {
-        throw new Error("Filebin returned an unreadable upload response.");
+  uploadMessage.textContent = `Uploading ${files.length} ${files.length === 1 ? "file" : "files"} to Filebin…`;
+  const queue = files.map((file) => ({ file, status: "queued", link: "" }));
+  renderQueue(queue);
+  const results = new Array(queue.length);
+  let nextIndex = 0;
+  const worker = async () => {
+    while (nextIndex < queue.length) {
+      const index = nextIndex++;
+      const entry = queue[index];
+      entry.status = "uploading";
+      renderQueue(queue);
+      try {
+        const record = await uploadOne(entry.file);
+        entry.status = "success";
+        entry.link = record.shareUrl;
+        state.uploads.unshift(record);
+        results[index] = { ok: true, record };
+      } catch (error) {
+        entry.status = "error";
+        entry.errorMessage = error.message || "Upload failed";
+        results[index] = { ok: false, error };
+      } finally {
+        renderQueue(queue);
       }
     }
-    if (!response.ok || result?.bin?.id !== binId) {
-      const reason = responseText.trim().slice(0, 180);
-      throw new Error(`Filebin upload failed (HTTP ${response.status})${reason ? `: ${reason}` : "."}`);
-    }
-
-    const downloadUrl = new URL(`/${binId}/${encodedFileName}`, FILEBIN_ORIGIN).href;
-
-    const fileRecord = {
-      id: binId,
-      originalName: file.name,
-      name: file.name,
-      type: file.type || "application/octet-stream",
-      size: file.size,
-      shareUrl: makeBrandedShareUrl(file, downloadUrl),
-      url: downloadUrl,
-      expires: result.bin.expired_at || null,
-    };
-
-    state.uploads.unshift(fileRecord);
-    let metadataSaved = true;
-    try {
-      saveUploads();
-    } catch (error) {
-      metadataSaved = false;
-      console.error("Could not save upload details in this browser:", error);
-    }
-    renderUploads(state.uploads);
-    showUploadResult(fileRecord, metadataSaved);
-    fileInput.value = "";
+  };
+  await Promise.all(Array.from({ length: Math.min(state.settings.concurrency, queue.length) }, worker));
+  const successful = results.filter((result) => result.ok).length;
+  const failed = results.length - successful;
+  try {
+    if (successful) saveUploads();
+    if (successful && failed) uploadMessage.textContent = `${successful} uploaded; ${failed} failed. Successful links are saved in My uploads.`;
+    else if (successful) uploadMessage.textContent = `${successful} ${successful === 1 ? "file was" : "files were"} uploaded to Filebin.`;
+    else uploadMessage.textContent = "No files were uploaded. Review the error shown beside each file.";
   } catch (error) {
-    console.error("Could not upload file to Filebin:", error);
-    uploadMessage.textContent = `Upload failed: ${error.message || "Check your connection and try again."}`;
-  } finally {
-    submitButton.disabled = false;
+    uploadMessage.textContent = "Upload completed, but this browser could not save the upload history. Copy successful links from the list above.";
+  }
+  fileInput.value = "";
+  renderUploads();
+  updateProfileSummary();
+  submitButton.disabled = false;
+});
+
+tabs.forEach((tab) => tab.addEventListener("click", () => setActiveTab(tab.dataset.tab)));
+document.getElementById("upload-search").addEventListener("input", renderUploads);
+document.getElementById("upload-sort").addEventListener("change", renderUploads);
+document.getElementById("upload-tag-filter").addEventListener("change", renderUploads);
+document.getElementById("favorites-only").addEventListener("change", renderUploads);
+document.getElementById("dashboard-history-btn").addEventListener("click", () => {
+  setActiveTab("uploaded");
+  document.getElementById("files").scrollIntoView({ behavior: "smooth" });
+});
+
+function exportUploads(format) {
+  const fields = ["name", "type", "size", "createdAt", "url", "shareUrl", "expires", "favorite", "tags", "note"];
+  let content;
+  let type;
+  let extension;
+  if (format === "json") {
+    content = JSON.stringify(state.uploads, null, 2);
+    type = "application/json;charset=utf-8";
+    extension = "json";
+  } else {
+    const escapeCsv = (value) => {
+      let text = String(Array.isArray(value) ? value.join("; ") : value ?? "");
+      if (/^\s*[=+\-@]/.test(text)) text = `'${text}`;
+      return `"${text.replaceAll('"', '""')}"`;
+    };
+    content = [fields.map(escapeCsv).join(","), ...state.uploads.map((item) => fields.map((field) => escapeCsv(item[field])).join(","))].join("\r\n");
+    type = "text/csv;charset=utf-8";
+    extension = "csv";
+  }
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = `flofiletransfer-history-${new Date().toISOString().slice(0, 10)}.${extension}`;
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
+
+document.getElementById("export-json").addEventListener("click", () => exportUploads("json"));
+document.getElementById("export-csv").addEventListener("click", () => exportUploads("csv"));
+
+function handleSettingsChange() {
+  state.settings.defaultView = document.getElementById("setting-default-view").value;
+  state.settings.sort = document.getElementById("setting-sort").value;
+  state.settings.concurrency = Number(document.getElementById("setting-concurrency").value);
+  state.settings.showSize = document.getElementById("setting-show-size").checked;
+  document.getElementById("upload-sort").value = state.settings.sort;
+  try {
+    saveSettings();
+    document.getElementById("settings-feedback").textContent = "Settings saved in this browser.";
+  } catch (error) {
+    document.getElementById("settings-feedback").textContent = "Could not save settings in this browser.";
+  }
+  renderUploads();
+}
+
+["setting-default-view", "setting-sort", "setting-concurrency", "setting-show-size"].forEach((id) => {
+  document.getElementById(id).addEventListener("change", handleSettingsChange);
+});
+document.getElementById("reset-settings").addEventListener("click", () => {
+  state.settings = { ...DEFAULT_SETTINGS };
+  try { localStorage.removeItem(settingsKey()); } catch (error) { /* UI still resets to defaults. */ }
+  loadSettings();
+  setActiveTab(state.settings.defaultView);
+  document.getElementById("settings-feedback").textContent = "Settings reset to defaults.";
+  renderUploads();
+});
+
+const dropzone = document.querySelector(".dropzone");
+dropzone.addEventListener("dragover", (event) => {
+  event.preventDefault();
+  dropzone.classList.add("drag-over");
+});
+dropzone.addEventListener("dragleave", (event) => {
+  if (!dropzone.contains(event.relatedTarget)) dropzone.classList.remove("drag-over");
+});
+dropzone.addEventListener("drop", (event) => {
+  event.preventDefault();
+  dropzone.classList.remove("drag-over");
+  if (event.dataTransfer?.files?.length) {
+    fileInput.files = event.dataTransfer.files;
+    uploadMessage.textContent = `${fileInput.files.length} ${fileInput.files.length === 1 ? "file" : "files"} ready to upload.`;
   }
 });
 
-function loadUploads() {
-  renderUploads(state.uploads);
+function switchUser(user) {
+  const previousOwner = state.owner;
+  state.user = user || null;
+  state.owner = state.user?.sub || "anonymous";
+  if (previousOwner === state.owner && state.uploads.length) {
+    renderDashboard();
+    return;
+  }
+  state.uploads = readArray(currentUploadsKey());
+  loadSettings();
+  document.getElementById("upload-search").value = "";
+  document.getElementById("favorites-only").checked = false;
+  renderUploads();
+  updateProfileSummary();
+  setActiveTab(state.settings.defaultView);
+  if (state.user && previousOwner !== state.owner) {
+    window.setTimeout(() => document.getElementById("dashboard").scrollIntoView({ behavior: "smooth" }), 0);
+  }
 }
 
-tabs.forEach((tab) => {
-  tab.addEventListener("click", () => {
-    tabs.forEach((button) => button.classList.toggle("active", button === tab));
-    const target = tab.dataset.tab;
-
-    document.getElementById("repo-list").classList.toggle("active", target === "repo");
-    document.getElementById("uploaded-list").classList.toggle("active", target === "uploaded");
-  });
+document.addEventListener("storage", (event) => {
+  if (event.key === currentUploadsKey()) {
+    state.uploads = readArray(currentUploadsKey());
+    renderUploads();
+    updateProfileSummary();
+  }
 });
+window.addEventListener("flo-auth-change", (event) => switchUser(event.detail?.user));
 
+loadSettings();
+state.uploads = readArray(currentUploadsKey());
 loadRepoFiles();
-loadUploads();
+renderUploads();
+updateProfileSummary();
+setActiveTab(state.settings.defaultView);

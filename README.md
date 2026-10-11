@@ -58,3 +58,27 @@ Filebin-hosted download directly instead.
 Links created before this external upload integration are browser-local. Their
 file contents were never sent to a storage service, so upload the file again to
 create a shareable link.
+
+## Personal dashboard and upload history
+
+After sign-in, the personal dashboard shows the Auth0 profile, the locally
+recorded upload count and total file sizes, recent uploads, and favorites. The
+public repo-file browser and upload form remain available without signing in.
+Multiple files can be selected or dropped together; the per-user setting can
+run one, two, or three Filebin requests at once, and one failed file does not
+stop the others. The page shows each file's waiting, uploading, success, or
+error state. Byte-level
+progress is unavailable through the current Filebin `fetch` upload request.
+
+Upload metadata, favorite flags, tags, notes, and preferences are stored in the
+current browser's localStorage. Signed-in metadata is keyed to the Auth0 subject;
+anonymous history continues to use its separate legacy browser-local store.
+Nothing synchronizes across devices because this project has no user-data
+backend. Notes and tags are local metadata and are not sent to Filebin. Export
+the history as JSON or CSV to keep a copy. “Remove from history” removes only
+local metadata; the Filebin-hosted file remains publicly reachable until
+Filebin expires or removes it. Filebin documents a `DELETE /{bin}/{filename}`
+API, but its current CORS preflight response does not allow the cross-origin
+`DELETE` method required by this GitHub Pages app. File size and extension
+restrictions are enforced by Filebin's response, so the browser does not
+impose guessed limits. See the [Filebin API documentation](https://filebin.net/api).

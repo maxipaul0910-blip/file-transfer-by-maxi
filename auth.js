@@ -30,7 +30,10 @@ function clearAuthError() {
 
 function getUploadsSummary() {
   try {
-    const uploads = JSON.parse(localStorage.getItem("transferflow_uploads") || "[]");
+    const storageKey = currentUser?.sub
+      ? `transferflow_uploads:${encodeURIComponent(currentUser.sub)}`
+      : "transferflow_uploads";
+    const uploads = JSON.parse(localStorage.getItem(storageKey) || "[]");
     if (!Array.isArray(uploads)) {
       throw new TypeError("Saved uploads must be an array.");
     }
@@ -75,6 +78,8 @@ function getProviderName(user) {
 }
 
 function updateUI() {
+  window.floAuthUser = currentUser;
+  window.dispatchEvent(new CustomEvent("flo-auth-change", { detail: { user: currentUser } }));
   if (currentUser) {
     authToggleBtn.classList.add("hidden");
     profileToggleBtn.classList.remove("hidden");
@@ -264,6 +269,14 @@ function openMyUploads() {
 }
 
 document.getElementById("profile-details-btn").addEventListener("click", openAccountDetails);
+document.getElementById("profile-dashboard-btn").addEventListener("click", () => {
+  profileMenu.classList.add("hidden");
+  document.getElementById("dashboard").scrollIntoView({ behavior: "smooth" });
+});
+document.getElementById("profile-settings-btn").addEventListener("click", () => {
+  profileMenu.classList.add("hidden");
+  document.getElementById("settings").scrollIntoView({ behavior: "smooth" });
+});
 document.getElementById("close-account-modal").addEventListener("click", () => {
   accountModal.classList.add("hidden");
   profileToggleBtn.focus();
