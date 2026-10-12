@@ -59,7 +59,7 @@ function saveUploads() {
 
 function saveSettings() {
   localStorage.setItem(settingsKey(), JSON.stringify(state.settings));
-  applyTheme();
+  applyGradientSettings();
 }
 
 function normalizeHexColor(value, fallback) {
@@ -735,7 +735,7 @@ document.getElementById("reset-settings")?.addEventListener("click", () => {
   state.settings = { ...DEFAULT_SETTINGS };
   try { localStorage.removeItem(settingsKey()); } catch (error) { /* UI still resets to defaults. */ }
   loadSettings();
-  applyTheme();
+  applyGradientSettings();
   setActiveTab(document.body.classList.contains("dashboard-page") ? "uploaded" : state.settings.defaultView);
   document.getElementById("settings-feedback").textContent = "Settings reset to defaults.";
   renderUploads();
