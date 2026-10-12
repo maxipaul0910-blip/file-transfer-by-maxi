@@ -59,6 +59,7 @@ function saveUploads() {
 
 function saveSettings() {
   localStorage.setItem(settingsKey(), JSON.stringify(state.settings));
+  applyTheme();
 }
 
 function normalizeHexColor(value, fallback) {
@@ -87,6 +88,8 @@ function applyGradientSettings() {
   root.style.setProperty("--gradient-glow-end", `rgba(${colorChannels(end).join(", ")}, 0.14)`);
   root.style.setProperty("--gradient-base-start", blendColor(start, "#041c17", 0.42));
   root.style.setProperty("--gradient-base-end", blendColor(end, "#031611", 0.28));
+  root.style.setProperty("--color-start", state.settings.gradientStart);
+  root.style.setProperty("--color-end", state.settings.gradientEnd);
   const preview = document.getElementById("setting-gradient-preview");
   if (preview) preview.style.background = `linear-gradient(120deg, ${start}, ${end})`;
 }
@@ -732,6 +735,7 @@ document.getElementById("reset-settings")?.addEventListener("click", () => {
   state.settings = { ...DEFAULT_SETTINGS };
   try { localStorage.removeItem(settingsKey()); } catch (error) { /* UI still resets to defaults. */ }
   loadSettings();
+  applyTheme();
   setActiveTab(document.body.classList.contains("dashboard-page") ? "uploaded" : state.settings.defaultView);
   document.getElementById("settings-feedback").textContent = "Settings reset to defaults.";
   renderUploads();
