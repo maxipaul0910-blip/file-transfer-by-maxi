@@ -44,9 +44,13 @@
   --checkbox: color-mix(in srgb, var(--color-start) 92%, transparent);
   --checkbox-hover: color-mix(in srgb, var(--color-start) 55%, transparent);
   --spotlight: color-mix(in srgb, var(--color-end) 26%, transparent);
-  --p-glow: rgba(23, 183, 125, 0.16);
-  --p-ring: rgba(23, 183, 125, 0.32);
-  --p-soft: rgba(23, 183, 125, 0.10);
+  --p-glow: color-mix(in srgb, var(--color-start) 16%, transparent);
+  --p-ring: color-mix(in srgb, var(--color-start) 32%, transparent);
+  --p-soft: color-mix(in srgb, var(--color-start) 10%, transparent);
+  --p-light: color-mix(in srgb, var(--color-start) 55%, white 45%);
+  --p-mid: color-mix(in srgb, var(--color-start) 70%, black 30%);
+  --p-dark: color-mix(in srgb, var(--color-start) 45%, black 55%);
+  --p-accent: var(--color-end);
 
   --bg-gradient-start: var(--bg);
   --bg-gradient-end: #031611;
@@ -559,7 +563,7 @@ nav a:hover {
   border-radius: 50%;
 }
 
-.dot.green { background: #2bdc9c; }
+.dot.green { background: var(--p-accent); }
 .dot.yellow { background: #f4c864; }
 .dot.red { background: #ee6a6b; }
 
@@ -577,7 +581,7 @@ nav a:hover {
   width: 58px;
   height: 58px;
   border-radius: 16px;
-  background: linear-gradient(135deg, var(--p-glow), rgba(66, 208, 162, 0.86));
+  background: linear-gradient(135deg, var(--p-glow), var(--p-light));
   display: grid;
   place-items: center;
   color: white;
@@ -613,7 +617,7 @@ nav a:hover {
 
 .share-box {
   background: rgba(22, 49, 41, 0.9);
-  border: 1px solid rgba(66, 208, 162, 0.2);
+  border: 1px solid var(--p-soft);
   border-radius: 14px;
   padding: 14px 16px;
 }
@@ -775,7 +779,7 @@ nav a:hover {
   place-items: center;
   text-align: center;
   border-radius: 18px;
-  background: linear-gradient(180deg, var(--p-glow), rgba(66, 208, 162, 0.04));
+  background: linear-gradient(180deg, var(--p-glow), var(--p-soft));
 }
 
 .upload-icon {
@@ -1065,14 +1069,14 @@ nav a:hover {
 .dashboard-file-row a.dashboard-file-web {
   margin-left: 12px;
   padding: 4px 10px;
-  border: 1px solid rgba(110, 229, 177, 0.32);
+  border: 1px solid var(--border-strong);
   border-radius: 8px;
-  background: rgba(34, 179, 126, 0.12);
+  background: var(--p-soft);
   white-space: nowrap;
 }
 
 .dashboard-file-row a.dashboard-file-web:hover {
-  background: rgba(34, 179, 126, 0.22);
+  background: var(--p-glow);
   border-color: rgba(130, 245, 199, 0.45);
 }
 
@@ -1207,7 +1211,7 @@ nav a:hover {
 
 .beta-preview-card {
   margin-top: 16px;
-  border-color: rgba(66, 208, 162, 0.35);
+  border-color: var(--border-strong);
   background: linear-gradient(135deg, var(--glass), rgba(11, 26, 21, 0.76));
 }
 
@@ -1237,7 +1241,7 @@ nav a:hover {
 }
 
 .admin-notice[data-kind="success"] {
-  border-color: rgba(66, 208, 162, 0.45);
+  border-color: var(--border-strong);
   color: #a9f3d7;
 }
 
@@ -1635,12 +1639,12 @@ nav a,
 .file-link:hover {
   transform: translateY(-2px);
   border-color: rgba(111, 232, 188, 0.42);
-  background-color: rgba(66, 208, 162, 0.075);
+  background-color: var(--p-soft);
 }
 
 .profile-toggle-btn:hover {
   border-color: rgba(111, 232, 188, 0.62);
-  box-shadow: 0 0 0 4px rgba(66, 208, 162, 0.1);
+  box-shadow: 0 0 0 4px var(--p-soft);
 }
 
 .primary-btn {
@@ -1742,7 +1746,7 @@ nav a,
 }
 
 .mini-progress span {
-  box-shadow: 0 0 18px rgba(66, 208, 162, 0.48);
+  box-shadow: 0 0 18px var(--p-ring);
   animation: progress-glow 2.8s ease-in-out infinite alternate;
 }
 
@@ -1799,7 +1803,7 @@ nav a,
 }
 
 .feature-icon {
-  border: 1px solid rgba(66, 208, 162, 0.15);
+  border: 1px solid var(--p-soft);
   box-shadow: inset 0 1px rgba(255, 255, 255, 0.07);
   transition: transform 220ms ease, background-color 220ms ease;
 }
@@ -1825,7 +1829,7 @@ nav a,
 }
 
 .dropzone-inner {
-  background: radial-gradient(ellipse at center, var(--p-soft), rgba(66, 208, 162, 0.018) 66%);
+  background: radial-gradient(ellipse at center, var(--p-soft), var(--p-soft) 66%);
 }
 
 .dashboard-page .hero-copy h1 {
@@ -1843,7 +1847,7 @@ nav a,
 
 .upload-icon {
   color: #a1f3d7;
-  text-shadow: 0 0 26px rgba(66, 208, 162, 0.42);
+  text-shadow: 0 0 26px var(--p-ring);
   animation: upload-bob 2.4s ease-in-out infinite;
 }
 
@@ -1879,7 +1883,7 @@ input:focus-visible,
 select:focus-visible,
 textarea:focus-visible,
 .dropzone:focus-within {
-  outline: 2px solid #83ebc2;
+  outline: 2px solid var(--p-light);
   outline-offset: 3px;
 }
 
@@ -1904,8 +1908,8 @@ textarea:focus-visible,
 }
 
 @keyframes progress-glow {
-  from { filter: saturate(0.9); box-shadow: 0 0 10px rgba(66, 208, 162, 0.26); }
-  to { filter: saturate(1.2); box-shadow: 0 0 24px rgba(66, 208, 162, 0.56); }
+  from { filter: saturate(0.9); box-shadow: 0 0 10px var(--p-glow); }
+  to { filter: saturate(1.2); box-shadow: 0 0 24px var(--p-ring); }
 }
 
 @keyframes upload-bob {
@@ -1984,8 +1988,8 @@ textarea:focus-visible,
 .hero .secondary-btn:hover,
 .file-link.secondary:hover {
   border-color: #a1f3d7;
-  background: rgba(66, 208, 162, 0.13);
-  box-shadow: 0 0 0 4px rgba(66, 208, 162, 0.08), 0 0 24px rgba(66, 208, 162, 0.12);
+  background: var(--p-glow);
+  box-shadow: 0 0 0 4px var(--p-soft), 0 0 24px var(--p-soft);
   color: #e9fff6;
 }
 
@@ -1995,7 +1999,7 @@ textarea:focus-visible,
   overflow: hidden;
   min-width: 168px;
   padding: 15px 48px 15px 25px;
-  border: 2px solid #83ebc2;
+  border: 2px solid var(--p-light);
   border-radius: 999px;
   background: rgba(4, 24, 18, 0.72);
   color: #a1f3d7;
@@ -2018,7 +2022,7 @@ textarea:focus-visible,
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: #83ebc2;
+  background: var(--p-light);
   opacity: 0;
   transform: translate(-50%, -50%);
   transition: all 700ms cubic-bezier(0.23, 1, 0.32, 1);
@@ -2129,9 +2133,9 @@ textarea:focus-visible,
 .permission-option input[type="checkbox"]:checked,
 .admin-user-role-choices input[type="checkbox"]:checked,
 .check-label input[type="checkbox"]:checked {
-  border-color: #83ebc2;
-  background: linear-gradient(135deg, #83ebc2, #42d0a2);
-  box-shadow: 0 0 0 3px rgba(66, 208, 162, 0.11), 0 0 18px rgba(66, 208, 162, 0.2);
+  border-color: var(--p-light);
+  background: linear-gradient(135deg, var(--p-light), var(--p-accent));
+  box-shadow: 0 0 0 3px var(--p-soft), 0 0 18px var(--p-soft);
 }
 
 .permission-option input[type="checkbox"]:checked::before,
@@ -2162,7 +2166,7 @@ textarea:focus-visible,
 .sidebar-compact-row input { position:absolute; right:8px; width:38px; height:22px; margin:0; opacity:0; cursor:pointer; z-index:1; }
 .sidebar-switch-track { width:38px; height:22px; display:block; padding:3px; border:1px solid rgba(162,203,185,.34); border-radius:99px; background:rgba(2,17,13,.72); transition:background 180ms ease; }
 .sidebar-switch-track span { display:block; width:14px; height:14px; border-radius:50%; background:#afc8bc; transition:transform 180ms ease,background 180ms ease; }
-.sidebar-compact-row input:checked + .sidebar-switch-track { background:#12855e; border-color:#50d29e; }
+.sidebar-compact-row input:checked + .sidebar-switch-track { background:var(--p-mid); border-color:var(--p-light); }
 .sidebar-compact-row input:checked + .sidebar-switch-track span { transform:translateX(16px); background:#e8fff4; }
 .sidebar-compact-row input:focus-visible + .sidebar-switch-track { outline:2px solid #85e9bc; outline-offset:3px; }
 .sidebar-open-btn { display:grid; width:39px; height:39px; flex:0 0 39px; align-content:center; justify-items:center; gap:4px; padding:8px; border:1px solid var(--border); border-radius:12px; background:rgba(8,40,31,.88); box-shadow:0 8px 24px rgba(0,10,8,.2); cursor:pointer; }
